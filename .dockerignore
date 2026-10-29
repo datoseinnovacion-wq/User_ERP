@@ -1,0 +1,13 @@
+node_modules
+dist
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.git
+.github
+*.db
+*.sqlite3
+test_*.py
+test_*.db
+.sso_secret
