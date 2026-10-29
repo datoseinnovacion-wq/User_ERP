@@ -37,10 +37,13 @@ export const App: React.FC = () => {
     return null;
   });
 
-  const [activeView, setActiveView] = useState("sea_tablero");
-  const [activeUrl, setActiveUrl] = useState("http://localhost:8002/");
-  const [activeRepoName, setActiveRepoName] = useState("sea-link1720-main");
-  const [activePort, setActivePort] = useState("Puerto 8002");
+  const defaultModule = REPO_MODULES[0];
+  const defaultItem = defaultModule.items[0];
+
+  const [activeView, setActiveView] = useState(defaultItem.id);
+  const [activeUrl, setActiveUrl] = useState(defaultItem.url);
+  const [activeRepoName, setActiveRepoName] = useState(defaultModule.repoName);
+  const [activePort, setActivePort] = useState(defaultModule.port);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [showSecurityModal, setShowSecurityModal] = useState(false);
