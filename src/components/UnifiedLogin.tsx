@@ -26,8 +26,8 @@ interface LoginProps {
 type AuthViewMode = "CREDENTIALS" | "2FA_VERIFY" | "ONBOARDING";
 
 export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
-  const [username, setUsername] = useState("eliana");
-  const [password, setPassword] = useState("GerenLink2026!");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [warning, setWarning] = useState("");
   const [loading, setLoading] = useState(false);
@@ -57,14 +57,6 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       setInactivityNotice(true);
     }
   }, []);
-
-  const handleQuickSelect = (key: string) => {
-    if (isLocked) return;
-    setUsername(key);
-    setPassword(key === "eliana" ? "GerenLink2026!" : "LinkMaster1720!");
-    setError("");
-    setWarning("");
-  };
 
   // 1. Envío de Credenciales Primarias (Paso 1)
   const handlePrimarySubmit = async (e: React.FormEvent) => {
@@ -272,7 +264,7 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             <img
               src="/sistema_erp_banner.png"
               alt="SISTEMA ERP"
-              className="max-h-24 sm:max-h-28 mx-auto object-contain drop-shadow-[0_8px_24px_rgba(0,229,255,0.25)] rounded-xl"
+              className="max-h-32 sm:max-h-36 mx-auto object-contain drop-shadow-[0_10px_30px_rgba(0,194,203,0.35)] rounded-2xl"
             />
           </div>
           <div className="flex items-center justify-center space-x-1.5 mt-1">
@@ -344,91 +336,42 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             VISTA 1: INGRESO DE CREDENCIALES PRIMARIAS
            ======================================================== */}
         {viewMode === "CREDENTIALS" && (
-          <>
-            {/* Acceso Rápido de Perfil Autorizado */}
-            <div className="mb-5 bg-[#060D1A]/90 p-2.5 rounded-2xl border border-cyan-900/40">
-              <p className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider px-2 mb-2">
-                Seleccionar Perfil Autorizado (SSO):
-              </p>
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  type="button"
+          <form onSubmit={handlePrimarySubmit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1.5 uppercase tracking-wider">
+                Usuario o Correo Corporativo
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  required
                   disabled={isLocked}
-                  onClick={() => handleQuickSelect("eliana")}
-                  className={`px-2 py-2 rounded-xl text-xs font-semibold text-center transition flex flex-col items-center justify-center ${
-                    username === "eliana"
-                      ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-bold shadow-[0_0_15px_rgba(6,182,212,0.4)]"
-                      : "bg-[#0B1527] text-slate-300 border border-slate-700/60 hover:border-cyan-500/50 hover:text-white disabled:opacity-40"
-                  }`}
-                >
-                  <span>Eliana Da Costa</span>
-                  <span className="text-[9px] opacity-80">Gerencia Link</span>
-                </button>
-                <button
-                  type="button"
-                  disabled={isLocked}
-                  onClick={() => handleQuickSelect("admin")}
-                  className={`px-2 py-2 rounded-xl text-xs font-semibold text-center transition flex flex-col items-center justify-center ${
-                    username === "admin"
-                      ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-bold shadow-[0_0_15px_rgba(6,182,212,0.4)]"
-                      : "bg-[#0B1527] text-slate-300 border border-slate-700/60 hover:border-cyan-500/50 hover:text-white disabled:opacity-40"
-                  }`}
-                >
-                  <span>Administrador</span>
-                  <span className="text-[9px] opacity-80">Holding Master</span>
-                </button>
-                <button
-                  type="button"
-                  disabled={isLocked}
-                  onClick={() => handleQuickSelect("coordinador")}
-                  className={`px-2 py-2 rounded-xl text-xs font-semibold text-center transition flex flex-col items-center justify-center ${
-                    username === "coordinador"
-                      ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-bold shadow-[0_0_15px_rgba(6,182,212,0.4)]"
-                      : "bg-[#0B1527] text-slate-300 border border-slate-700/60 hover:border-cyan-500/50 hover:text-white disabled:opacity-40"
-                  }`}
-                >
-                  <span>Coordinador</span>
-                  <span className="text-[9px] opacity-80">Operaciones</span>
-                </button>
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Ingrese su usuario o correo..."
+                  className="w-full text-xs pl-10 pr-3 py-3 bg-[#060D1A] border border-slate-700/80 rounded-xl text-white placeholder-slate-500 focus:bg-[#081224] focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 outline-none transition disabled:bg-slate-900 disabled:text-slate-600"
+                />
+                <Mail className="w-4 h-4 text-cyan-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               </div>
             </div>
 
-            <form onSubmit={handlePrimarySubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5 uppercase tracking-wider">
-                  Usuario o Correo Corporativo
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    required
-                    disabled={isLocked}
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="ej. eliana"
-                    className="w-full text-xs pl-10 pr-3 py-3 bg-[#060D1A] border border-slate-700/80 rounded-xl text-white placeholder-slate-500 focus:bg-[#081224] focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 outline-none transition disabled:bg-slate-900 disabled:text-slate-600"
-                  />
-                  <Mail className="w-4 h-4 text-cyan-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-300 mb-1.5 uppercase tracking-wider">
+                Contraseña de Acceso
+              </label>
+              <div className="relative">
+                <input
+                  type="password"
+                  required
+                  disabled={isLocked}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Ingrese su contraseña..."
+                  className="w-full text-xs pl-10 pr-3 py-3 bg-[#060D1A] border border-slate-700/80 rounded-xl text-white placeholder-slate-500 focus:bg-[#081224] focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 outline-none transition disabled:bg-slate-900 disabled:text-slate-600"
+                />
+                <Lock className="w-4 h-4 text-cyan-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5 uppercase tracking-wider">
-                  Contraseña de Acceso
-                </label>
-                <div className="relative">
-                  <input
-                    type="password"
-                    required
-                    disabled={isLocked}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••••••"
-                    className="w-full text-xs pl-10 pr-3 py-3 bg-[#060D1A] border border-slate-700/80 rounded-xl text-white placeholder-slate-500 focus:bg-[#081224] focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 outline-none transition disabled:bg-slate-900 disabled:text-slate-600"
-                  />
-                  <Lock className="w-4 h-4 text-cyan-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                </div>
-              </div>
+            </div>
 
               <button
                 type="submit"
@@ -447,7 +390,6 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                 )}
               </button>
             </form>
-          </>
         )}
 
         {/* ========================================================
