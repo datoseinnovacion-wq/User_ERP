@@ -11,7 +11,7 @@ WORKDIR /app
 
 # Instalar dependencias
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --ignore-scripts
 
 # Copiar código fuente y compilar bundle de producción
 COPY tsconfig.json vite.config.ts tailwind.config.js postcss.config.js index.html ./
@@ -36,9 +36,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Instalar dependencias de Python
+# Instalar dependencias de Python fijadas y verificadas (SonarCloud S8541 & S8544)
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --only-binary :all: -r requirements.txt
 
 # Copiar aplicación backend y módulos de seguridad
 COPY main.py security_service.py ./

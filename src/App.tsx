@@ -133,7 +133,7 @@ export const App: React.FC = () => {
       const data = await res.json();
       setUnlockFeedback(data.message || `Usuario ${unlockTarget} desbloqueado.`);
       setUnlockTarget("");
-      fetchAuditLogs();
+      await fetchAuditLogs();
     } catch {
       setUnlockFeedback("Error al procesar el desbloqueo.");
     }
@@ -141,7 +141,7 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     if (showSecurityModal) {
-      fetchAuditLogs();
+      void fetchAuditLogs();
     }
   }, [showSecurityModal]);
 
@@ -388,8 +388,9 @@ export const App: React.FC = () => {
             </div>
             <div className="mt-4 space-y-3 text-xs">
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Contenedor / DUA</label>
+                <label htmlFor="assign-modal-container" className="block text-slate-700 font-bold mb-1">Contenedor / DUA</label>
                 <input
+                  id="assign-modal-container"
                   type="text"
                   placeholder="CAIU9511868 (C-57772)"
                   defaultValue="CAIU9511868 (C-57772)"
@@ -398,15 +399,16 @@ export const App: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Seleccionar Camión & Chofer</label>
-                <select className="w-full border border-slate-300 rounded-lg p-2 bg-white">
+                <label htmlFor="assign-modal-truck" className="block text-slate-700 font-bold mb-1">Seleccionar Camión & Chofer</label>
+                <select id="assign-modal-truck" className="w-full border border-slate-300 rounded-lg p-2 bg-white">
                   <option>Mack Granite (Placa: A92BL4K) - José Ramírez</option>
                   <option>Mack Vision (Placa: A02FF7L) - Alejandro Pérez</option>
                 </select>
               </div>
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Destino de Entrega</label>
+                <label htmlFor="assign-modal-destination" className="block text-slate-700 font-bold mb-1">Destino de Entrega</label>
                 <input
+                  id="assign-modal-destination"
                   type="text"
                   placeholder="VALENCIA - CIRRUS"
                   defaultValue="VALENCIA - CIRRUS"

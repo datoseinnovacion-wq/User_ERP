@@ -61,7 +61,7 @@ export const AdminView: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchData();
+    void fetchData();
   }, []);
 
   const handleUnlock = async (e: React.FormEvent) => {
@@ -76,7 +76,7 @@ export const AdminView: React.FC = () => {
       const data = await res.json();
       setUnlockMessage(data.message || "Usuario desbloqueado.");
       setUnlockTarget("");
-      fetchData();
+      await fetchData();
     } catch {
       setUnlockMessage("Error al procesar el desbloqueo.");
     }

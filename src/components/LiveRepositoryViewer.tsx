@@ -27,7 +27,14 @@ export const LiveRepositoryViewer: React.FC<LiveRepositoryViewerProps> = ({
   };
 
   const handleOpenNewTab = () => {
-    window.open(url, "_blank");
+    try {
+      const parsed = new URL(url, window.location.origin);
+      if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+        window.open(parsed.href, "_blank", "noopener,noreferrer");
+      }
+    } catch {
+      // Ignorar URLs no conformes por seguridad
+    }
   };
 
   return (

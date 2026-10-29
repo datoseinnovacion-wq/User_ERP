@@ -574,12 +574,19 @@ if os.path.exists(dist_dir):
     async def serve_spa(full_path: str):
         if full_path.startswith("api/"):
             raise HTTPException(status_code=404, detail="Not Found")
-        file_path = os.path.join(dist_dir, full_path)
-        if os.path.isfile(file_path):
-            return FileResponse(file_path)
-        return FileResponse(os.path.join(dist_dir, "index.html"))
+        
+        # Prevenir Path Traversal y Filesystem Oracle (SonarCloud S6549 & S2083)
+        base_dir = os.path.abspath(dist_dir)
+        target_path = os.path.abspath(os.path.join(base_dir, full_path))
+        if not target_path.startswith(base_dir):
+            raise HTTPException(status_code=403, detail="Acceso denegado.")
+
+        if os.path.isfile(target_path):
+            return FileResponse(target_path)
+        return FileResponse(os.path.join(base_dir, "index.html"))
 
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PORT", "8000"))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=not IS_PRODUCTION)
+    host = os.getenv("HOST", "127.0.0.1")
+    uvicorn.run("main:app", host=host, port=port, reload=not IS_PRODUCTION)

@@ -203,7 +203,7 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   };
 
   const copyToClipboard = (text: string, isCodes = false) => {
-    navigator.clipboard.writeText(text);
+    void navigator.clipboard.writeText(text);
     if (isCodes) {
       setCopiedCodes(true);
       setTimeout(() => setCopiedCodes(false), 2000);
@@ -338,11 +338,12 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         {viewMode === "CREDENTIALS" && (
           <form onSubmit={handlePrimarySubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1.5 uppercase tracking-wider">
+              <label htmlFor="login-username" className="block text-xs font-bold text-slate-300 mb-1.5 uppercase tracking-wider">
                 Usuario o Correo Corporativo
               </label>
               <div className="relative">
                 <input
+                  id="login-username"
                   type="text"
                   required
                   disabled={isLocked}
@@ -356,11 +357,12 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1.5 uppercase tracking-wider">
+              <label htmlFor="login-password" className="block text-xs font-bold text-slate-300 mb-1.5 uppercase tracking-wider">
                 Contraseña de Acceso
               </label>
               <div className="relative">
                 <input
+                  id="login-password"
                   type="password"
                   required
                   disabled={isLocked}
@@ -406,14 +408,14 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1.5 uppercase tracking-wider">
+              <label htmlFor="totp-code-input" className="block text-xs font-bold text-slate-300 mb-1.5 uppercase tracking-wider">
                 {useBackupCode ? "Código de Respaldo de Emergencia" : "Código de Seguridad (6 Dígitos)"}
               </label>
               <div className="relative">
                 <input
+                  id="totp-code-input"
                   type="text"
                   required
-                  autoFocus
                   maxLength={useBackupCode ? 10 : 6}
                   value={totpCode}
                   onChange={(e) => setTotpCode(e.target.value.toUpperCase())}
@@ -650,7 +652,6 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                   <input
                     type="text"
                     required
-                    autoFocus
                     maxLength={6}
                     value={totpCode}
                     onChange={(e) => setTotpCode(e.target.value)}
