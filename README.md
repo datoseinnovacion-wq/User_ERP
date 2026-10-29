@@ -1,6 +1,19 @@
-# LINK 1.720 - Plataforma Web Unificada
+# SISTEMA ERP - Plataforma Central Multiempresas
 
-Plataforma centralizada del ecosistema **LINK 1.720 Agentes Aduanales S.A.** con arquitectura de **Autenticación Única (SSO)** y fidelidad estética al Tablero de Despacho Aduanero.
+Plataforma unificada y Gateway SSO del Holding de Comercio Exterior y Logística:
+- **Link 1.720 Agentes Aduanales S.A.** (Aduanas, Nacionalización, DUAs, Preliquidaciones)
+- **Logi** (Transporte Terrestre, Asignación Vehicular, Flota de Camiones)
+- **Consolidadora** (Carga Internacional LCL/FCL, Almacén, BLs)
+- **Portal de Consignatarios** (Clientes, Seguimiento en Vivo, Facturación)
+
+---
+
+## Identidad Visual & Emisor 2FA
+- **Sistema Oficial:** `Sistema_ERP`
+- **Emisor TOTP RFC 6238:** `Sistema_ERP` (Google Authenticator)
+- **Logotipo Oficial:** Engranaje y bucle infinito cibernético (Cian, Azul y Naranja).
+
+---
 
 ## Módulos Integrados
 1. **Despacho Aduanero (`sea-link1720-main`)**: Tablero de cargas, DUAs, contenedores y tracking de navieras.
@@ -17,7 +30,7 @@ Plataforma centralizada del ecosistema **LINK 1.720 Agentes Aduanales S.A.** con
 | Perfil | Usuario | Contraseña | Rol Asignado | Alcance de Módulos |
 | :--- | :--- | :--- | :--- | :--- |
 | **Eliana Da Costa** | `eliana` | `GerenLink2026!` | **GERENTE** | Todos los módulos + Administración |
-| **Admin Central** | `admin` | `LinkMaster1720!` | **ADMINISTRADOR** | Acceso Total (Superusuario) |
+| **Admin Central** | `admin` | `LinkMaster1720!` | **ADMINISTRADOR** | Acceso Total (Superusuario Holding) |
 | **Coordinador** | `coordinador` | `LinkMaster1720!` | **COORDINADOR** | Despacho Aduanero & Asignación Vehicular |
 
 ---

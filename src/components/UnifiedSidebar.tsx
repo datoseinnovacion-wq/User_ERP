@@ -326,12 +326,12 @@ export const REPO_MODULES: RepoModule[] = [
     ],
   },
   {
-    id: "user_eliana_gestion",
-    title: "Espacio de Gestión",
-    repoName: "Link_User_Eliana",
+    id: "sistema_erp_admin",
+    title: "Administración Central",
+    repoName: "Sistema_ERP",
     port: "Puerto 8000",
-    badge: "GERENCIA",
-    badgeColor: "bg-purple-50 text-purple-700 border-purple-200",
+    badge: "HOLDING",
+    badgeColor: "bg-cyan-50 text-cyan-800 border-cyan-200",
     icon: LayoutDashboard,
     defaultView: "user_coordinador",
     defaultUrl: "http://localhost:8002/sso-auto-login?user=eliana&next=/coordinacion",
@@ -386,7 +386,7 @@ export const UnifiedSidebar: React.FC<SidebarProps> = ({
     modulo_vehicular: false,
     modulo_preliquidaciones: false,
     modulo_finanzas: false,
-    user_eliana_gestion: false,
+    sistema_erp_admin: false,
   });
 
   useEffect(() => {
@@ -422,11 +422,11 @@ export const UnifiedSidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside className="w-64 bg-white border-r border-slate-200 flex flex-col shrink-0 h-screen sticky top-0 overflow-hidden select-none">
-      {/* 1. CABECERA: LOGO OFICIAL LINK 1.720 */}
+      {/* 1. CABECERA: SISTEMA ERP HOLDING */}
       <div className="p-4 border-b border-slate-100 flex flex-col items-center text-center shrink-0">
-        <BrandMark size="md" />
-        <p className="text-[10px] text-slate-400 font-medium mt-2 tracking-wide uppercase">
-          SEA &bull; UN BL, UN CASO &bull; DESPACHO
+        <BrandMark size="md" showText={true} />
+        <p className="text-[9px] text-slate-400 font-bold mt-2 tracking-wider uppercase">
+          Holding: Link • Logi • Consolidadora
         </p>
       </div>
 

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Suite de Pruebas Automatizadas de Seguridad Link 1.720:
-- Estándar 2FA TOTP RFC 6238 (Google Authenticator) con Emisor Link_User_Eliana
+Suite de Pruebas Automatizadas de Seguridad Link 1.720 & Sistema ERP:
+- Estándar 2FA TOTP RFC 6238 (Google Authenticator) con Emisor Sistema_ERP
 - Ventana de deriva (valid_window=1)
 - Códigos de Respaldo de Emergencia (8 códigos XXXX-XXXX de un solo uso)
 - Flujo de Enrolamiento Obligatorio (Onboarding Paso a Paso)
@@ -53,13 +53,13 @@ class TestLinkSecuritySuite(unittest.TestCase):
         security_service.security_db.admin_unlock("testuser")
 
     def test_01_system_name_and_qr_generation(self):
-        """Verifica que el emisor e issuer sean Link_User_Eliana y el QR sea local en Base64."""
+        """Verifica que el emisor e issuer sean Sistema_ERP y el QR sea local en Base64."""
         secret = security_service.generate_base32_secret()
         self.assertEqual(len(secret), 32)
 
         uri = security_service.generate_totp_uri("eliana", secret)
-        self.assertIn("issuer=Link_User_Eliana", uri)
-        self.assertIn("Link_User_Eliana", uri)
+        self.assertIn("issuer=Sistema_ERP", uri)
+        self.assertIn("Sistema_ERP", uri)
 
         qr_b64 = security_service.generate_qr_base64_data_uri(uri)
         self.assertTrue(qr_b64.startswith("data:image/png;base64,"))
@@ -120,7 +120,7 @@ class TestLinkSecuritySuite(unittest.TestCase):
         self.assertIn("qr_code", data)
         self.assertIn("secret", data)
         self.assertEqual(len(data.get("backup_codes")), 8)
-        self.assertEqual(data.get("issuer"), "Link_User_Eliana")
+        self.assertEqual(data.get("issuer"), "Sistema_ERP")
 
         temp_token = data["temp_token"]
         secret = data["secret"]

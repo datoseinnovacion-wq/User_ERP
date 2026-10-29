@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-LINK 1.720 Agentes Aduanales S.A.
+LINK 1.720 Agentes Aduanales S.A. & Holding Logístico
 Servicio Centralizado de Seguridad, 2FA TOTP RFC 6238, Anti Fuerza Bruta y Auditoría VET.
-Sistema: Link_User_Eliana
+Sistema: Sistema_ERP
 """
 
 import os
@@ -25,7 +25,7 @@ try:
 except Exception:
     VET_TZ = timezone(timedelta(hours=-4), name="VET")
 
-SISTEMA_NOMBRE = "Link_User_Eliana"
+SISTEMA_NOMBRE = "Sistema_ERP"
 LOCKOUT_DURATION_SECONDS = 86400  # 24 horas exactas
 MAX_FAILED_ATTEMPTS = 3
 DEFAULT_DB_PATH = os.path.join(os.path.dirname(__file__), "link_security.db")
@@ -455,8 +455,8 @@ def generate_8_backup_codes() -> List[str]:
     return codes
 
 def generate_totp_uri(username: str, secret: str) -> str:
-    """Genera la URI estándar RFC 6238 con emisor Link_User_Eliana."""
-    # otpauth://totp/Link_User_Eliana:{Usuario}?secret={SECRETO}&issuer=Link_User_Eliana
+    """Genera la URI estándar RFC 6238 con emisor Sistema_ERP."""
+    # otpauth://totp/Sistema_ERP:{Usuario}?secret={SECRETO}&issuer=Sistema_ERP
     return pyotp.totp.TOTP(secret).provisioning_uri(
         name=username,
         issuer_name=SISTEMA_NOMBRE

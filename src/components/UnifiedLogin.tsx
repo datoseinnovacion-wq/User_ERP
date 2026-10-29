@@ -5,7 +5,6 @@ import {
   ShieldAlert,
   ArrowRight,
   ShieldCheck,
-  QrCode,
   Copy,
   Check,
   Download,
@@ -13,9 +12,12 @@ import {
   ArrowLeft,
   Clock,
   AlertTriangle,
+  Building,
+  Truck,
+  Layers,
+  Users
 } from "lucide-react";
 import { UserSession } from "../types";
-import { BrandMark } from "./BrandMark";
 
 interface LoginProps {
   onLoginSuccess: (user: UserSession) => void;
@@ -98,37 +100,40 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       }
 
       // Procesar respuesta según estado 2FA
-      if (data.status === "2FA_REQUIRED") {
-        setTempToken(data.temp_token);
-        setViewMode("2FA_VERIFY");
-      } else if (data.status === "ONBOARDING_REQUIRED") {
+      if (data.status === "ONBOARDING_REQUIRED") {
         setTempToken(data.temp_token);
         setQrCodeDataUri(data.qr_code);
         setManualSecret(data.secret);
         setBackupCodes(data.backup_codes || []);
-        setOnboardingStep(1);
         setViewMode("ONBOARDING");
-      } else if (data.token && data.user) {
-        // Sesión otorgada directamente (fallback)
+        setOnboardingStep(1);
+      } else if (data.status === "2FA_REQUIRED") {
+        setTempToken(data.temp_token);
+        setViewMode("2FA_VERIFY");
+      } else {
         localStorage.setItem("link_sso_user", JSON.stringify(data.user));
         localStorage.setItem("link_sso_token", data.token);
         onLoginSuccess(data.user);
       }
     } catch {
-      setError("Error de comunicación con el Gateway SSO de Link 1.720.");
+      setError("No fue posible conectar con el servidor de autenticación.");
     } finally {
       setLoading(false);
     }
   };
 
-  // 2. Validación de 2FA para usuario ya enrolado
-  const handleVerify2FASubmit = async (e: React.FormEvent) => {
+  // 2. Validación de Token 2FA (Paso 2)
+  const handle2FASubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     try {
-      const response = await fetch("/api/auth/2fa/verify", {
+      const endpoint = useBackupCode
+        ? "/api/auth/2fa/verify-backup"
+        : "/api/auth/2fa/verify";
+
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ temp_token: tempToken, code: totpCode }),
@@ -219,15 +224,21 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   const downloadBackupCodes = () => {
     const textContent =
       `=====================================================\n` +
-      `LINK 1.720 Agentes Aduanales S.A. - Códigos de Respaldo 2FA\n` +
-      `Sistema: Link_User_Eliana\n` +
+      `SISTEMA ERP - HOLDING DE COMERCIO EXTERIOR & LOGÍSTICA\n` +
+      `Códigos de Respaldo 2FA (Google Authenticator RFC 6238)\n` +
+      `Sistema Oficial: Sistema_ERP\n` +
       `Usuario: ${username}\n` +
-      `Fecha: ${new Date().toLocaleString()}\n` +
+      `Fecha de Emisión: ${new Date().toLocaleString()}\n` +
       `=====================================================\n\n` +
+      `EMPRESAS INTEGRADAS EN EL HOLDING:\n` +
+      `• Link 1.720 Agentes Aduanales S.A. (Aduanas & Nacionalización)\n` +
+      `• Logi (Transporte Terrestre & Flota Vehicular)\n` +
+      `• Consolidadora de Carga (LCL / FCL & Almacén)\n` +
+      `• Portal de Consignatarios (Clientes & Tracking)\n\n` +
       `INSTRUCCIONES DE SEGURIDAD:\n` +
       `Cada código puede ser utilizado exactamente UNA SOLA VEZ para acceder si pierde su teléfono.\n` +
       `Guarde este archivo en un lugar cifrado o imprímalo en físico.\n\n` +
-      `CÓDIGOS DE EMERGENCIA:\n` +
+      `CÓDIGOS DE EMERGENCIA DE UN SOLO USO:\n` +
       backupCodes.map((c, i) => `  [${i + 1}] ${c}`).join("\n") +
       `\n\n=====================================================\n`;
 
@@ -235,7 +246,7 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `codigos_respaldo_Link_User_Eliana_${username}.txt`;
+    link.download = `codigos_respaldo_Sistema_ERP_${username}.txt`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -243,29 +254,65 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F4F5F7] flex flex-col justify-center items-center p-4 selection:bg-red-500 selection:text-white">
-      <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-xl p-6 sm:p-8 relative overflow-hidden">
-        {/* Franja de Acento Rojo Corporativo Link */}
-        <div className="absolute top-0 left-0 right-0 h-1.5 bg-[#DC2626]" />
+    <div className="min-h-screen bg-[#070D18] flex flex-col justify-center items-center p-4 relative overflow-hidden select-none font-sans">
+      {/* Resplandores ambientales cibernéticos */}
+      <div className="absolute top-1/6 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-1/6 right-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-cyan-950/20 via-[#070D18]/90 to-[#040810] pointer-events-none" />
 
-        {/* Cabecera con Logo Oficial */}
-        <div className="text-center mb-5">
-          <BrandMark size="lg" />
-          <h1 className="text-lg font-bold text-slate-900 mt-3 tracking-tight">
-            Portal Central Link 1.720
-          </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Autenticación Única (SSO) &bull; Link_User_Eliana
+      {/* Contenedor Principal Glassmorphism */}
+      <div className="w-full max-w-lg bg-[#0C1527]/90 backdrop-blur-xl border border-cyan-500/30 rounded-3xl shadow-[0_0_60px_rgba(0,194,203,0.18)] p-6 sm:p-9 relative overflow-hidden text-slate-100 z-10">
+        
+        {/* Barra superior con gradiente cian-azul-naranja inspirado en el logo */}
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-cyan-400 via-sky-500 to-orange-500" />
+
+        {/* Cabecera con Banner Oficial SISTEMA ERP */}
+        <div className="text-center mb-6">
+          <div className="relative inline-block mx-auto mb-2">
+            <img
+              src="/sistema_erp_banner.png"
+              alt="SISTEMA ERP"
+              className="max-h-24 sm:max-h-28 mx-auto object-contain drop-shadow-[0_8px_24px_rgba(0,229,255,0.25)] rounded-xl"
+            />
+          </div>
+          <div className="flex items-center justify-center space-x-1.5 mt-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+            <p className="text-[11px] font-mono tracking-widest text-cyan-300 font-semibold uppercase">
+              Plataforma Central Multiempresas
+            </p>
+          </div>
+          <p className="text-[10px] text-slate-400 mt-1">
+            Gateway Seguro SSO &bull; Autenticación TOTP RFC 6238
           </p>
+
+          {/* Insignias de las 4 Empresas del Holding */}
+          <div className="grid grid-cols-4 gap-1 mt-3 px-2 py-1.5 bg-[#060D1A]/80 border border-cyan-900/40 rounded-xl text-[9px] font-semibold text-slate-300">
+            <div className="flex items-center justify-center space-x-1 py-0.5">
+              <Building className="w-2.5 h-2.5 text-cyan-400" />
+              <span>Link</span>
+            </div>
+            <div className="flex items-center justify-center space-x-1 py-0.5">
+              <Truck className="w-2.5 h-2.5 text-orange-400" />
+              <span>Logi</span>
+            </div>
+            <div className="flex items-center justify-center space-x-1 py-0.5">
+              <Layers className="w-2.5 h-2.5 text-sky-400" />
+              <span>Consolidadora</span>
+            </div>
+            <div className="flex items-center justify-center space-x-1 py-0.5">
+              <Users className="w-2.5 h-2.5 text-emerald-400" />
+              <span>Consignatarios</span>
+            </div>
+          </div>
         </div>
 
         {/* BANNER 1: Cierre por Inactividad */}
         {inactivityNotice && (
-          <div className="mb-4 bg-amber-50 border border-amber-300 text-amber-800 text-xs rounded-xl p-3 flex items-start space-x-2">
-            <Clock className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
+          <div className="mb-4 bg-amber-950/60 border border-amber-500/40 text-amber-200 text-xs rounded-xl p-3 flex items-start space-x-2">
+            <Clock className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
             <div>
               <p className="font-bold">Sesión Finalizada por Inactividad</p>
-              <p className="mt-0.5">
+              <p className="mt-0.5 text-[11px] text-amber-300/90">
                 Su sesión ha finalizado automáticamente tras 5 minutos de inactividad por motivos de seguridad.
               </p>
             </div>
@@ -274,11 +321,11 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
         {/* BANNER 2: Bloqueo Anti Fuerza Bruta (24h) */}
         {isLocked && (
-          <div className="mb-4 bg-red-50 border border-red-300 text-red-800 text-xs rounded-xl p-3 flex items-start space-x-2">
-            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />
+          <div className="mb-4 bg-red-950/70 border border-red-500/50 text-red-200 text-xs rounded-xl p-3 flex items-start space-x-2">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-red-400" />
             <div>
               <p className="font-bold">Acceso Temporalmente Bloqueado</p>
-              <p className="mt-0.5">
+              <p className="mt-0.5 text-[11px] text-red-300/90">
                 Ha superado el límite de 3 intentos fallidos permitidos. Su acceso ha sido bloqueado temporalmente por 24 horas por motivos de seguridad.
               </p>
             </div>
@@ -287,8 +334,8 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
         {/* Mensaje de Error / Aviso de Intentos */}
         {error && !isLocked && (
-          <div className="mb-4 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl p-3 flex items-start space-x-2">
-            <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5 text-[#DC2626]" />
+          <div className="mb-4 bg-red-950/60 border border-red-500/40 text-red-300 text-xs rounded-xl p-3 flex items-start space-x-2">
+            <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5 text-red-400" />
             <span>{error}</span>
           </div>
         )}
@@ -298,55 +345,58 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
            ======================================================== */}
         {viewMode === "CREDENTIALS" && (
           <>
-            {/* Acceso Rápido de Perfil */}
-            <div className="mb-5 bg-slate-50 p-2 rounded-xl border border-slate-200">
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-2 mb-1.5">
+            {/* Acceso Rápido de Perfil Autorizado */}
+            <div className="mb-5 bg-[#060D1A]/90 p-2.5 rounded-2xl border border-cyan-900/40">
+              <p className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider px-2 mb-2">
                 Seleccionar Perfil Autorizado (SSO):
               </p>
-              <div className="grid grid-cols-3 gap-1.5">
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
                   disabled={isLocked}
                   onClick={() => handleQuickSelect("eliana")}
-                  className={`px-2 py-1.5 rounded-lg text-xs font-semibold text-center transition ${
+                  className={`px-2 py-2 rounded-xl text-xs font-semibold text-center transition flex flex-col items-center justify-center ${
                     username === "eliana"
-                      ? "bg-[#18181B] text-white shadow-xs"
-                      : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 disabled:opacity-50"
+                      ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-bold shadow-[0_0_15px_rgba(6,182,212,0.4)]"
+                      : "bg-[#0B1527] text-slate-300 border border-slate-700/60 hover:border-cyan-500/50 hover:text-white disabled:opacity-40"
                   }`}
                 >
-                  Eliana Da Costa
+                  <span>Eliana Da Costa</span>
+                  <span className="text-[9px] opacity-80">Gerencia Link</span>
                 </button>
                 <button
                   type="button"
                   disabled={isLocked}
                   onClick={() => handleQuickSelect("admin")}
-                  className={`px-2 py-1.5 rounded-lg text-xs font-semibold text-center transition ${
+                  className={`px-2 py-2 rounded-xl text-xs font-semibold text-center transition flex flex-col items-center justify-center ${
                     username === "admin"
-                      ? "bg-[#18181B] text-white shadow-xs"
-                      : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 disabled:opacity-50"
+                      ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-bold shadow-[0_0_15px_rgba(6,182,212,0.4)]"
+                      : "bg-[#0B1527] text-slate-300 border border-slate-700/60 hover:border-cyan-500/50 hover:text-white disabled:opacity-40"
                   }`}
                 >
-                  Administrador
+                  <span>Administrador</span>
+                  <span className="text-[9px] opacity-80">Holding Master</span>
                 </button>
                 <button
                   type="button"
                   disabled={isLocked}
                   onClick={() => handleQuickSelect("coordinador")}
-                  className={`px-2 py-1.5 rounded-lg text-xs font-semibold text-center transition ${
+                  className={`px-2 py-2 rounded-xl text-xs font-semibold text-center transition flex flex-col items-center justify-center ${
                     username === "coordinador"
-                      ? "bg-[#18181B] text-white shadow-xs"
-                      : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 disabled:opacity-50"
+                      ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-bold shadow-[0_0_15px_rgba(6,182,212,0.4)]"
+                      : "bg-[#0B1527] text-slate-300 border border-slate-700/60 hover:border-cyan-500/50 hover:text-white disabled:opacity-40"
                   }`}
                 >
-                  Coordinador
+                  <span>Coordinador</span>
+                  <span className="text-[9px] opacity-80">Operaciones</span>
                 </button>
               </div>
             </div>
 
             <form onSubmit={handlePrimarySubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">
-                  Usuario o Correo
+                <label className="block text-xs font-bold text-slate-300 mb-1.5 uppercase tracking-wider">
+                  Usuario o Correo Corporativo
                 </label>
                 <div className="relative">
                   <input
@@ -356,15 +406,15 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder="ej. eliana"
-                    className="w-full text-xs pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#DC2626] focus:border-[#DC2626] outline-none transition disabled:bg-slate-100 disabled:text-slate-400"
+                    className="w-full text-xs pl-10 pr-3 py-3 bg-[#060D1A] border border-slate-700/80 rounded-xl text-white placeholder-slate-500 focus:bg-[#081224] focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 outline-none transition disabled:bg-slate-900 disabled:text-slate-600"
                   />
-                  <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Mail className="w-4 h-4 text-cyan-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">
-                  Contraseña
+                <label className="block text-xs font-bold text-slate-300 mb-1.5 uppercase tracking-wider">
+                  Contraseña de Acceso
                 </label>
                 <div className="relative">
                   <input
@@ -374,16 +424,16 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••••••"
-                    className="w-full text-xs pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#DC2626] focus:border-[#DC2626] outline-none transition disabled:bg-slate-100 disabled:text-slate-400"
+                    className="w-full text-xs pl-10 pr-3 py-3 bg-[#060D1A] border border-slate-700/80 rounded-xl text-white placeholder-slate-500 focus:bg-[#081224] focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 outline-none transition disabled:bg-slate-900 disabled:text-slate-600"
                   />
-                  <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Lock className="w-4 h-4 text-cyan-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 </div>
               </div>
 
               <button
                 type="submit"
                 disabled={loading || isLocked}
-                className="w-full mt-2 bg-[#DC2626] hover:bg-[#B91C1C] disabled:bg-slate-400 text-white font-bold py-2.5 px-4 rounded-xl text-xs tracking-wider uppercase transition shadow-md flex items-center justify-center space-x-2"
+                className="w-full mt-2 bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-slate-950 font-black py-3 px-4 rounded-xl text-xs tracking-wider uppercase transition-all shadow-[0_0_20px_rgba(6,182,212,0.35)] hover:shadow-[0_0_30px_rgba(6,182,212,0.55)] flex items-center justify-center space-x-2 disabled:opacity-40"
               >
                 {isLocked ? (
                   <span>Acceso Bloqueado (24h)</span>
@@ -391,7 +441,7 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                   <span>Validando credenciales…</span>
                 ) : (
                   <>
-                    <span>Ingresar a la Plataforma</span>
+                    <span>Ingresar al Sistema ERP</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -401,20 +451,20 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         )}
 
         {/* ========================================================
-            VISTA 2: VALIDACIÓN 2FA HABITUAL (USUARIO YA ENROLADO)
+            VISTA 2: VERIFICACIÓN 2FA OBLIGATORIA
            ======================================================== */}
         {viewMode === "2FA_VERIFY" && (
-          <form onSubmit={handleVerify2FASubmit} className="space-y-4">
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
-              <ShieldCheck className="w-8 h-8 text-emerald-600 mx-auto mb-1.5" />
-              <p className="text-xs font-bold text-slate-800">Verificación de Dos Factores (2FA)</p>
-              <p className="text-[11px] text-slate-500 mt-0.5">
-                Google Authenticator &bull; <span className="font-semibold text-slate-700">Link_User_Eliana</span>
+          <form onSubmit={handle2FASubmit} className="space-y-4">
+            <div className="text-center p-3 bg-[#060D1A] rounded-2xl border border-cyan-900/50">
+              <ShieldCheck className="w-8 h-8 text-cyan-400 mx-auto mb-1" />
+              <p className="text-xs font-bold text-white">Verificación de Dos Factores (2FA)</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Google Authenticator &bull; Emisor: <span className="font-semibold text-cyan-300">Sistema_ERP</span>
               </p>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wider">
+              <label className="block text-xs font-bold text-slate-300 mb-1.5 uppercase tracking-wider">
                 {useBackupCode ? "Código de Respaldo de Emergencia" : "Código de Seguridad (6 Dígitos)"}
               </label>
               <div className="relative">
@@ -426,7 +476,7 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                   value={totpCode}
                   onChange={(e) => setTotpCode(e.target.value.toUpperCase())}
                   placeholder={useBackupCode ? "XXXX-XXXX" : "123456"}
-                  className="w-full text-center text-lg font-mono font-bold tracking-widest pl-3 pr-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#DC2626] focus:border-[#DC2626] outline-none transition"
+                  className="w-full text-center text-xl font-mono font-bold tracking-widest pl-3 pr-3 py-3 bg-[#060D1A] border border-cyan-500/50 rounded-xl text-cyan-300 focus:bg-[#081224] focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 outline-none transition"
                 />
               </div>
             </div>
@@ -439,7 +489,7 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                   setTotpCode("");
                   setError("");
                 }}
-                className="text-slate-600 hover:text-slate-900 font-semibold underline text-[11px]"
+                className="text-cyan-400 hover:text-cyan-300 font-semibold underline text-[11px]"
               >
                 {useBackupCode ? "Usar app Google Authenticator" : "Usar código de respaldo"}
               </button>
@@ -450,7 +500,7 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                   setTotpCode("");
                   setError("");
                 }}
-                className="text-slate-400 hover:text-slate-600 text-[11px] flex items-center gap-1"
+                className="text-slate-400 hover:text-slate-200 text-[11px] flex items-center gap-1"
               >
                 <ArrowLeft className="w-3 h-3" />
                 <span>Volver</span>
@@ -460,7 +510,7 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             <button
               type="submit"
               disabled={loading || !totpCode}
-              className="w-full mt-2 bg-[#DC2626] hover:bg-[#B91C1C] disabled:bg-slate-400 text-white font-bold py-2.5 px-4 rounded-xl text-xs tracking-wider uppercase transition shadow-md flex items-center justify-center space-x-2"
+              className="w-full mt-2 bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-slate-950 font-black py-3 px-4 rounded-xl text-xs tracking-wider uppercase transition shadow-[0_0_20px_rgba(6,182,212,0.35)] flex items-center justify-center space-x-2 disabled:opacity-40"
             >
               {loading ? (
                 <span>Verificando código…</span>
@@ -480,62 +530,62 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         {viewMode === "ONBOARDING" && (
           <div className="space-y-4">
             {/* Indicador de Pasos */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-700/60">
               <div className="flex items-center space-x-1.5">
                 <span
                   className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
                     onboardingStep === 1
-                      ? "bg-[#DC2626] text-white"
-                      : "bg-slate-200 text-slate-700"
+                      ? "bg-cyan-400 text-slate-950 font-black shadow-[0_0_10px_rgba(6,182,212,0.5)]"
+                      : "bg-slate-800 text-slate-400"
                   }`}
                 >
                   1
                 </span>
-                <span className="text-[11px] font-bold text-slate-700">Escanear</span>
+                <span className="text-[11px] font-bold text-slate-200">Escanear</span>
               </div>
-              <div className="w-4 h-px bg-slate-300" />
+              <div className="w-4 h-px bg-slate-700" />
               <div className="flex items-center space-x-1.5">
                 <span
                   className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
                     onboardingStep === 2
-                      ? "bg-[#DC2626] text-white"
-                      : "bg-slate-200 text-slate-700"
+                      ? "bg-cyan-400 text-slate-950 font-black shadow-[0_0_10px_rgba(6,182,212,0.5)]"
+                      : "bg-slate-800 text-slate-400"
                   }`}
                 >
                   2
                 </span>
-                <span className="text-[11px] font-bold text-slate-700">Respaldos</span>
+                <span className="text-[11px] font-bold text-slate-200">Respaldos</span>
               </div>
-              <div className="w-4 h-px bg-slate-300" />
+              <div className="w-4 h-px bg-slate-700" />
               <div className="flex items-center space-x-1.5">
                 <span
                   className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
                     onboardingStep === 3
-                      ? "bg-[#DC2626] text-white"
-                      : "bg-slate-200 text-slate-700"
+                      ? "bg-cyan-400 text-slate-950 font-black shadow-[0_0_10px_rgba(6,182,212,0.5)]"
+                      : "bg-slate-800 text-slate-400"
                   }`}
                 >
                   3
                 </span>
-                <span className="text-[11px] font-bold text-slate-700">Activar</span>
+                <span className="text-[11px] font-bold text-slate-200">Activar</span>
               </div>
             </div>
 
             {/* PASO 1: Escaneo de Código QR */}
             {onboardingStep === 1 && (
               <div className="space-y-3 text-center">
-                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                <h3 className="text-xs font-bold text-cyan-300 uppercase tracking-wider">
                   Paso 1: Vincular Google Authenticator
                 </h3>
-                <p className="text-[11px] text-slate-600">
-                  Abra su app <strong>Google Authenticator</strong> y escanee el código QR asignado para el sistema <strong>Link_User_Eliana</strong>:
+                <p className="text-[11px] text-slate-300">
+                  Abra su app <strong>Google Authenticator</strong> y escanee el código QR emitido para el sistema <strong>Sistema_ERP</strong>:
                 </p>
 
                 {qrCodeDataUri && (
-                  <div className="inline-block p-2 bg-white border border-slate-300 rounded-xl shadow-xs">
+                  <div className="inline-block p-2.5 bg-white border-2 border-cyan-400 rounded-2xl shadow-[0_0_20px_rgba(6,182,212,0.3)]">
                     <img
                       src={qrCodeDataUri}
-                      alt="Código QR TOTP Link 1.720"
+                      alt="Código QR TOTP Sistema ERP"
                       className="w-44 h-44 mx-auto"
                     />
                   </div>
@@ -545,23 +595,23 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                   <button
                     type="button"
                     onClick={() => setShowManualKey(!showManualKey)}
-                    className="text-[11px] font-bold text-[#DC2626] hover:underline"
+                    className="text-[11px] font-bold text-cyan-400 hover:text-cyan-300 underline"
                   >
                     {showManualKey ? "Ocultar clave manual" : "¿No puede escanear? Ver clave manual Base32"}
                   </button>
 
                   {showManualKey && (
-                    <div className="mt-2 bg-slate-50 border border-slate-200 p-2.5 rounded-lg flex items-center justify-between text-left">
-                      <span className="font-mono text-xs font-bold text-slate-800 tracking-wider">
+                    <div className="mt-2 bg-[#060D1A] border border-cyan-800/60 p-2.5 rounded-xl flex items-center justify-between text-left">
+                      <span className="font-mono text-xs font-bold text-cyan-300 tracking-wider">
                         {manualSecret}
                       </span>
                       <button
                         type="button"
                         onClick={() => copyToClipboard(manualSecret, false)}
-                        className="p-1.5 hover:bg-slate-200 rounded text-slate-600"
+                        className="p-1.5 hover:bg-slate-800 rounded text-cyan-400"
                         title="Copiar Clave"
                       >
-                        {copiedKey ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                        {copiedKey ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
                       </button>
                     </div>
                   )}
@@ -570,7 +620,7 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                 <button
                   type="button"
                   onClick={() => setOnboardingStep(2)}
-                  className="w-full mt-2 bg-[#18181B] hover:bg-black text-white font-bold py-2 px-4 rounded-xl text-xs uppercase tracking-wider transition flex items-center justify-center space-x-1.5"
+                  className="w-full mt-2 bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-slate-950 font-black py-2.5 px-4 rounded-xl text-xs uppercase tracking-wider transition flex items-center justify-center space-x-1.5 shadow-[0_0_15px_rgba(6,182,212,0.3)]"
                 >
                   <span>Continuar a Códigos de Respaldo</span>
                   <ArrowRight className="w-4 h-4" />
@@ -582,20 +632,20 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             {onboardingStep === 2 && (
               <div className="space-y-3">
                 <div className="text-center">
-                  <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                  <h3 className="text-xs font-bold text-cyan-300 uppercase tracking-wider">
                     Paso 2: Códigos de Respaldo (Emergencia)
                   </h3>
-                  <p className="text-[11px] text-slate-600 mt-1">
+                  <p className="text-[11px] text-slate-300 mt-1">
                     Guarde estos 8 códigos en un lugar seguro. Si pierde acceso a su app, podrá utilizarlos una sola vez:
                   </p>
                 </div>
 
                 {/* Rejilla de Códigos */}
-                <div className="grid grid-cols-2 gap-2 bg-slate-50 border border-slate-200 p-3 rounded-xl">
+                <div className="grid grid-cols-2 gap-2 bg-[#060D1A] border border-cyan-900/50 p-3 rounded-2xl">
                   {backupCodes.map((code, index) => (
                     <div
                       key={index}
-                      className="bg-white border border-slate-200 rounded-lg py-1.5 px-2 text-center font-mono text-xs font-bold text-slate-800 shadow-2xs"
+                      className="bg-[#0B1527] border border-cyan-800/40 rounded-xl py-2 px-2 text-center font-mono text-xs font-bold text-cyan-200"
                     >
                       {code}
                     </div>
@@ -607,17 +657,17 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                   <button
                     type="button"
                     onClick={() => copyToClipboard(backupCodes.join("\n"), true)}
-                    className="flex items-center justify-center space-x-1 py-2 px-3 border border-slate-300 hover:bg-slate-100 rounded-lg text-xs font-semibold text-slate-700 transition"
+                    className="flex items-center justify-center space-x-1 py-2 px-3 border border-cyan-700/60 hover:bg-cyan-950/40 rounded-xl text-xs font-semibold text-cyan-300 transition"
                   >
-                    {copiedCodes ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copiedCodes ? "Copiados!" : "Copiar Códigos"}</span>
+                    {copiedCodes ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedCodes ? "¡Copiados!" : "Copiar Códigos"}</span>
                   </button>
                   <button
                     type="button"
                     onClick={downloadBackupCodes}
-                    className="flex items-center justify-center space-x-1 py-2 px-3 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 transition"
+                    className="flex items-center justify-center space-x-1 py-2 px-3 bg-cyan-900/40 hover:bg-cyan-800/50 border border-cyan-500/40 rounded-xl text-xs font-semibold text-white transition"
                   >
-                    <Download className="w-3.5 h-3.5 text-slate-700" />
+                    <Download className="w-3.5 h-3.5 text-cyan-300" />
                     <span>Descargar (.txt)</span>
                   </button>
                 </div>
@@ -626,14 +676,14 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                   <button
                     type="button"
                     onClick={() => setOnboardingStep(1)}
-                    className="text-xs text-slate-500 hover:text-slate-700 font-semibold"
+                    className="text-xs text-slate-400 hover:text-white font-semibold"
                   >
                     Atrás
                   </button>
                   <button
                     type="button"
                     onClick={() => setOnboardingStep(3)}
-                    className="bg-[#18181B] hover:bg-black text-white font-bold py-2 px-4 rounded-xl text-xs uppercase tracking-wider transition flex items-center space-x-1.5"
+                    className="bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-slate-950 font-black py-2 px-4 rounded-xl text-xs uppercase tracking-wider transition flex items-center space-x-1.5 shadow-[0_0_15px_rgba(6,182,212,0.3)]"
                   >
                     <span>Siguiente: Confirmar</span>
                     <ArrowRight className="w-4 h-4" />
@@ -646,10 +696,10 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             {onboardingStep === 3 && (
               <form onSubmit={handleActivate2FASubmit} className="space-y-4">
                 <div className="text-center">
-                  <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                  <h3 className="text-xs font-bold text-cyan-300 uppercase tracking-wider">
                     Paso 3: Confirmación y Activación
                   </h3>
-                  <p className="text-[11px] text-slate-600 mt-1">
+                  <p className="text-[11px] text-slate-300 mt-1">
                     Escriba el código de 6 dígitos que muestra ahora la app Google Authenticator para confirmar la vinculación:
                   </p>
                 </div>
@@ -663,7 +713,7 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                     value={totpCode}
                     onChange={(e) => setTotpCode(e.target.value)}
                     placeholder="123456"
-                    className="w-full text-center text-xl font-mono font-bold tracking-widest py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#DC2626] focus:border-[#DC2626] outline-none transition"
+                    className="w-full text-center text-2xl font-mono font-bold tracking-widest py-3 bg-[#060D1A] border border-cyan-500/60 rounded-xl text-cyan-300 focus:bg-[#081224] focus:ring-2 focus:ring-cyan-400 focus:border-cyan-400 outline-none transition"
                   />
                 </div>
 
@@ -671,7 +721,7 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                   <button
                     type="button"
                     onClick={() => setOnboardingStep(2)}
-                    className="text-slate-500 hover:text-slate-700 font-semibold"
+                    className="text-slate-400 hover:text-white font-semibold"
                   >
                     Atrás
                   </button>
@@ -683,7 +733,7 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                       setTotpCode("");
                       setError("");
                     }}
-                    className="text-slate-400 hover:text-slate-600 text-[11px]"
+                    className="text-slate-400 hover:text-slate-200 text-[11px]"
                   >
                     Cancelar
                   </button>
@@ -692,7 +742,7 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                 <button
                   type="submit"
                   disabled={loading || totpCode.length < 6}
-                  className="w-full mt-2 bg-[#DC2626] hover:bg-[#B91C1C] disabled:bg-slate-400 text-white font-bold py-2.5 px-4 rounded-xl text-xs tracking-wider uppercase transition shadow-md flex items-center justify-center space-x-2"
+                  className="w-full mt-2 bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-slate-950 font-black py-3 px-4 rounded-xl text-xs tracking-wider uppercase transition shadow-[0_0_20px_rgba(6,182,212,0.35)] flex items-center justify-center space-x-2 disabled:opacity-40"
                 >
                   {loading ? (
                     <span>Activando 2FA…</span>
@@ -709,12 +759,12 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         )}
 
         {/* Pie de Firma Institucional */}
-        <div className="mt-6 pt-4 border-t border-slate-100 text-center">
+        <div className="mt-6 pt-4 border-t border-slate-800 text-center">
           <p className="text-[10px] text-slate-400">
-            LINK 1.720 Agentes Aduanales S.A. &bull; RIF J-503883587
+            SISTEMA ERP &bull; LINK 1.720 Agentes Aduanales S.A. &bull; RIF J-503883587
           </p>
-          <p className="text-[10px] text-slate-400 mt-0.5">
-            Seguridad RFC 6238 &bull; Emisor: Link_User_Eliana
+          <p className="text-[10px] text-cyan-400/80 mt-0.5 font-mono">
+            Seguridad RFC 6238 &bull; Emisor Oficial: Sistema_ERP
           </p>
         </div>
       </div>

@@ -224,7 +224,7 @@ export const App: React.FC = () => {
                   </p>
                   <p className="font-bold text-emerald-900 mt-1 flex items-center gap-1">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span>Link_User_Eliana</span>
+                    <span>Sistema_ERP</span>
                   </p>
                   <p className="text-[10px] text-emerald-700 mt-0.5">
                     Google Authenticator RFC 6238

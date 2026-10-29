@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-LINK 1.720 Agentes Aduanales S.A.
+LINK 1.720 Agentes Aduanales S.A. & Holding Logístico
 Plataforma Web Centralizada & API Gateway SSO
-Sistema Oficial: Link_User_Eliana
+Sistema Oficial: Sistema_ERP (Link, Logi, Consolidadora, Consignatarios)
 Implementación del Estándar Completo de Seguridad:
   - Doble Factor de Autenticación Obligatorio (Google Authenticator TOTP RFC 6238)
   - Control de Inactividad (5 minutos)
@@ -60,7 +60,7 @@ COOKIE_NAME = "link_sso_session"
 TEMP_TOKEN_EXPIRY = 600  # 10 minutos para completar 2FA
 
 app = FastAPI(
-    title="LINK 1.720 | Link_User_Eliana SSO",
+    title="Sistema ERP | Holding Central Gateway SSO",
     version="2.0.0",
     docs_url="/api/docs",
     redoc_url=None
