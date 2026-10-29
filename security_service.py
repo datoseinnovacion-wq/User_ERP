@@ -28,7 +28,7 @@ except Exception:
 SISTEMA_NOMBRE = "Sistema_ERP"
 LOCKOUT_DURATION_SECONDS = 86400  # 24 horas exactas
 MAX_FAILED_ATTEMPTS = 3
-DEFAULT_DB_PATH = os.path.join(os.path.dirname(__file__), "link_security.db")
+DEFAULT_DB_PATH = os.getenv("LINK_SECURITY_DB", os.path.join(os.path.dirname(__file__), "link_security.db"))
 
 def get_venezuela_now() -> datetime:
     """Retorna la fecha y hora actual en zona horaria oficial de Venezuela (VET UTC-4)."""

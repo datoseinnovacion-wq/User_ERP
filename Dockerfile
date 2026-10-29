@@ -46,8 +46,18 @@ COPY main.py security_service.py ./
 # Copiar el build compilado de la Etapa 1 (Frontend SPA)
 COPY --from=frontend-builder /app/dist ./dist
 
+# Crear usuario seguro sin privilegios (SonarCloud S6585)
+RUN groupadd -r erpuser && useradd -r -g erpuser -m -d /home/erpuser erpuser \
+    && chown -R erpuser:erpuser /app
+
+USER erpuser
+
 # Puerto esperado por Cloud Run (por defecto 8080)
 EXPOSE 8080
+
+# Chequeo de salud del contenedor (SonarCloud S6589)
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:${PORT:-8080}/api/health || exit 1
 
 # Comando de arranque para Cloud Run
 CMD ["sh", "-c", "exec uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080}"]

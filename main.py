@@ -58,6 +58,7 @@ SECRET_KEY = get_sso_secret()
 ALGORITHM = "HS256"
 COOKIE_NAME = "link_sso_session"
 TEMP_TOKEN_EXPIRY = 600  # 10 minutos para completar 2FA
+IS_PRODUCTION = os.getenv("ENVIRONMENT", "").lower() in ("production", "prod")
 
 app = FastAPI(
     title="Sistema ERP | Holding Central Gateway SSO",
@@ -66,9 +67,31 @@ app = FastAPI(
     redoc_url=None
 )
 
+cors_origins_env = os.getenv("ALLOWED_ORIGINS", "")
+if cors_origins_env:
+    allowed_origins = [o.strip() for o in cors_origins_env.split(",") if o.strip()]
+else:
+    allowed_origins = [
+        "http://localhost:3000",
+        "http://localhost:8000",
+        "http://localhost:8001",
+        "http://localhost:8002",
+        "http://localhost:8090",
+        "http://localhost:43123",
+        "http://localhost:43124",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:8000",
+        "http://127.0.0.1:8001",
+        "http://127.0.0.1:8002",
+        "http://127.0.0.1:8090",
+        "http://127.0.0.1:43123",
+        "http://127.0.0.1:43124",
+    ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
+    allow_origin_regex=os.getenv("CORS_ORIGIN_REGEX", r"https?://(localhost|127\.0\.0\.1)(:\d+)?"),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -318,13 +341,14 @@ async def verify_2fa(req: Verify2FARequest, request: Request, response: Response
 
     # Otorgar Sesión Definitiva
     token = create_sso_token(user)
+    cookie_secure = IS_PRODUCTION or os.getenv("COOKIE_SECURE", "false").lower() == "true"
     response.set_cookie(
         key=COOKIE_NAME,
         value=token,
         max_age=604800,
         httponly=True,
         samesite="lax",
-        secure=False
+        secure=cookie_secure
     )
 
     modulos = json.loads(user["modulos"]) if isinstance(user["modulos"], str) else user["modulos"]
@@ -410,13 +434,14 @@ async def activate_2fa(req: Activate2FARequest, request: Request, response: Resp
     # Actualizar estado de usuario en memoria para respuesta
     updated_user = security_db.get_user_by_username(username)
     token = create_sso_token(updated_user)
+    cookie_secure = IS_PRODUCTION or os.getenv("COOKIE_SECURE", "false").lower() == "true"
     response.set_cookie(
         key=COOKIE_NAME,
         value=token,
         max_age=604800,
         httponly=True,
         samesite="lax",
-        secure=False
+        secure=cookie_secure
     )
 
     modulos = json.loads(updated_user["modulos"]) if isinstance(updated_user["modulos"], str) else updated_user["modulos"]
@@ -556,4 +581,5 @@ if os.path.exists(dist_dir):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    port = int(os.getenv("PORT", "8000"))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=not IS_PRODUCTION)
