@@ -583,7 +583,10 @@ if os.path.exists(dist_dir):
 
         if os.path.isfile(target_path):
             return FileResponse(target_path)
-        return FileResponse(os.path.join(base_dir, "index.html"))
+        return FileResponse(
+            os.path.join(base_dir, "index.html"),
+            headers={"Cache-Control": "no-cache, no-store, must-revalidate"}
+        )
 
 if __name__ == "__main__":
     import uvicorn
