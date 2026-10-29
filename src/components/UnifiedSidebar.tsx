@@ -66,37 +66,66 @@ interface SidebarProps {
   onOpenSecurityModal: () => void;
 }
 
+// Detección automática del entorno: Localhost vs Producción (Cloud Run)
+const isLocal =
+  typeof window !== "undefined" &&
+  (window.location.hostname === "localhost" ||
+   window.location.hostname === "127.0.0.1" ||
+   window.location.hostname.startsWith("192.168."));
+
+export const SEA_BASE = isLocal
+  ? "http://localhost:43123"
+  : "https://sea-link1720-804329607921.us-central1.run.app";
+
+export const VEHICULAR_BASE = isLocal
+  ? "http://localhost:8002"
+  : "https://link-modulo-asignacion-vehicular-830816277767.us-central1.run.app";
+
+export const PRELIQ_BASE = isLocal
+  ? "http://localhost:8090"
+  : "https://link-preliquidaciones-830816277767.us-central1.run.app";
+
+export const FINANZAS_BASE = isLocal
+  ? "http://localhost:8001"
+  : "https://link-modulo-finanzas-830816277767.us-central1.run.app";
+
+const PORT_SEA = isLocal ? "Puerto 43123" : "Cloud Run";
+const PORT_VEHICULAR = isLocal ? "Puerto 8002" : "Cloud Run";
+const PORT_PRELIQ = isLocal ? "Puerto 8090" : "Cloud Run";
+const PORT_FINANZAS = isLocal ? "Puerto 8001" : "Cloud Run";
+const PORT_ADMIN = isLocal ? "Puerto 8000" : "Cloud Run";
+
 export const REPO_MODULES: RepoModule[] = [
   {
     id: "sea_link1720",
     title: "Sistema SEA 1.720",
     repoName: "sea-link1720-main",
-    port: "Puerto 43123",
+    port: PORT_SEA,
     badge: "SEA MAIN",
     badgeColor: "bg-red-50 text-[#DC2626] border-red-200",
     icon: LayoutGrid,
     defaultView: "sea_tablero",
-    defaultUrl: "http://localhost:43123/?sso_token=81c280d95d1aa799569036468f7012d6ae9ce47c02dd2090",
+    defaultUrl: `${SEA_BASE}/?sso_token=81c280d95d1aa799569036468f7012d6ae9ce47c02dd2090`,
     items: [
       {
         id: "sea_tablero",
         label: "Tablero Kanban de BLs",
         hint: "Seguimiento de expedientes aduanales",
-        url: "http://localhost:43123/tablero?sso_token=81c280d95d1aa799569036468f7012d6ae9ce47c02dd2090",
+        url: `${SEA_BASE}/tablero?sso_token=81c280d95d1aa799569036468f7012d6ae9ce47c02dd2090`,
         icon: LayoutGrid,
       },
       {
         id: "sea_cola",
         label: "Pendientes de Hoy",
         hint: "Demora, bloqueo y ETA de buques",
-        url: "http://localhost:43123/cola?sso_token=81c280d95d1aa799569036468f7012d6ae9ce47c02dd2090",
+        url: `${SEA_BASE}/cola?sso_token=81c280d95d1aa799569036468f7012d6ae9ce47c02dd2090`,
         icon: Inbox,
       },
       {
         id: "sea_metricas",
         label: "Dashboard de Métricas",
         hint: "KPIs por área, cliente y naviera",
-        url: "http://localhost:43123/metricas?sso_token=81c280d95d1aa799569036468f7012d6ae9ce47c02dd2090",
+        url: `${SEA_BASE}/metricas?sso_token=81c280d95d1aa799569036468f7012d6ae9ce47c02dd2090`,
         badge: "KPIS",
         badgeColor: "bg-red-600 text-white",
         icon: BarChart3,
@@ -105,21 +134,21 @@ export const REPO_MODULES: RepoModule[] = [
         id: "sea_grilla",
         label: "Grilla de Despachos",
         hint: "Expedientes, arribos y reconocimiento",
-        url: "http://localhost:43123/grilla?vista=despachos&sso_token=81c280d95d1aa799569036468f7012d6ae9ce47c02dd2090",
+        url: `${SEA_BASE}/grilla?vista=despachos&sso_token=81c280d95d1aa799569036468f7012d6ae9ce47c02dd2090`,
         icon: FileSpreadsheet,
       },
       {
         id: "sea_ingesta",
         label: "Sombra & Hub Gmail",
         hint: "Robot clasificador de correos",
-        url: "http://localhost:43123/ingesta?sso_token=81c280d95d1aa799569036468f7012d6ae9ce47c02dd2090",
+        url: `${SEA_BASE}/ingesta?sso_token=81c280d95d1aa799569036468f7012d6ae9ce47c02dd2090`,
         icon: Mail,
       },
       {
         id: "sea_cuarentena",
         label: "Cuarentena de Registros",
         hint: "Expedientes incompletos o faltantes",
-        url: "http://localhost:43123/cuarentena?sso_token=81c280d95d1aa799569036468f7012d6ae9ce47c02dd2090",
+        url: `${SEA_BASE}/cuarentena?sso_token=81c280d95d1aa799569036468f7012d6ae9ce47c02dd2090`,
         badge: "ALERTA",
         badgeColor: "bg-amber-50 text-amber-800 border-amber-200",
         icon: AlertTriangle,
@@ -128,7 +157,7 @@ export const REPO_MODULES: RepoModule[] = [
         id: "sea_maestros",
         label: "Catálogo de Clientes",
         hint: "Maestro de importadores registrados",
-        url: "http://localhost:43123/maestros?sso_token=81c280d95d1aa799569036468f7012d6ae9ce47c02dd2090",
+        url: `${SEA_BASE}/maestros?sso_token=81c280d95d1aa799569036468f7012d6ae9ce47c02dd2090`,
         icon: Users,
       },
     ],
@@ -137,32 +166,32 @@ export const REPO_MODULES: RepoModule[] = [
     id: "modulo_vehicular",
     title: "Asignación Vehicular",
     repoName: "Link-Modulo_Asignacion_Vehicular",
-    port: "Puerto 8002",
+    port: PORT_VEHICULAR,
     badge: "FLOTA & PATIO",
     badgeColor: "bg-slate-100 text-slate-700 border-slate-200",
     icon: Truck,
     defaultView: "veh_tablero",
-    defaultUrl: "http://localhost:8002/sso-auto-login?user=eliana&next=/",
+    defaultUrl: `${VEHICULAR_BASE}/sso-auto-login?user=eliana&next=/`,
     items: [
       {
         id: "veh_tablero",
         label: "Tablero de Cargas & Asignación",
         hint: "Control operativo de movilización",
-        url: "http://localhost:8002/sso-auto-login?user=eliana&next=/",
+        url: `${VEHICULAR_BASE}/sso-auto-login?user=eliana&next=/`,
         icon: Truck,
       },
       {
         id: "veh_preview",
         label: "Vista Planilla Excel",
         hint: "Cuadrícula de movilización",
-        url: "http://localhost:8002/sso-auto-login?user=eliana&next=/#preview",
+        url: `${VEHICULAR_BASE}/sso-auto-login?user=eliana&next=/#preview`,
         icon: FileSpreadsheet,
       },
       {
         id: "veh_delivered",
         label: "Contenedores Entregados",
         hint: "Histórico de ciclo cerrado",
-        url: "http://localhost:8002/sso-auto-login?user=eliana&next=/#delivered",
+        url: `${VEHICULAR_BASE}/sso-auto-login?user=eliana&next=/#delivered`,
         badge: "197",
         badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200",
         icon: CheckCheck,
@@ -171,28 +200,28 @@ export const REPO_MODULES: RepoModule[] = [
         id: "veh_fleet",
         label: "Flota & Camiones",
         hint: "Catálogo de choferes y placas",
-        url: "http://localhost:8002/sso-auto-login?user=eliana&next=/#fleet",
+        url: `${VEHICULAR_BASE}/sso-auto-login?user=eliana&next=/#fleet`,
         icon: Route,
       },
       {
         id: "veh_customers",
         label: "Catálogo de Clientes",
         hint: "Direcciones y destinos entrega",
-        url: "http://localhost:8002/sso-auto-login?user=eliana&next=/#customers",
+        url: `${VEHICULAR_BASE}/sso-auto-login?user=eliana&next=/#customers`,
         icon: Building2,
       },
       {
         id: "veh_orders",
         label: "Histórico Órdenes de Entrega",
         hint: "Registro oficial de despachos",
-        url: "http://localhost:8002/sso-auto-login?user=eliana&next=/#orders",
+        url: `${VEHICULAR_BASE}/sso-auto-login?user=eliana&next=/#orders`,
         icon: Archive,
       },
       {
         id: "veh_manual",
         label: "Manual de Procesos SOP",
         hint: "Procedimiento oficial interactivo & PDF",
-        url: "http://localhost:8002/sso-auto-login?user=eliana&next=/manual",
+        url: `${VEHICULAR_BASE}/sso-auto-login?user=eliana&next=/manual`,
         badge: "SOP",
         badgeColor: "bg-indigo-50 text-indigo-700 border-indigo-200",
         icon: BookOpen,
@@ -201,7 +230,7 @@ export const REPO_MODULES: RepoModule[] = [
         id: "veh_activity",
         label: "Bitácora",
         hint: "Auditoría de asignaciones y patio",
-        url: "http://localhost:8002/sso-auto-login?user=eliana&next=/#activity",
+        url: `${VEHICULAR_BASE}/sso-auto-login?user=eliana&next=/#activity`,
         icon: ClipboardList,
       },
     ],
@@ -210,74 +239,74 @@ export const REPO_MODULES: RepoModule[] = [
     id: "modulo_preliquidaciones",
     title: "Preliquidaciones",
     repoName: "Link_Preliquidaciones",
-    port: "Puerto 8090",
+    port: PORT_PRELIQ,
     badge: "LINK PRELIQ",
     badgeColor: "bg-amber-50 text-amber-800 border-amber-200",
     icon: Scale,
     defaultView: "preliq_dashboard",
-    defaultUrl: "http://localhost:8090/sso-auto-login?user=eliana&next=/dashboard",
+    defaultUrl: `${PRELIQ_BASE}/sso-auto-login?user=eliana&next=/dashboard`,
     items: [
       {
         id: "preliq_dashboard",
         label: "Dashboard de Expedientes",
         hint: "Resumen general de liquidaciones",
-        url: "http://localhost:8090/sso-auto-login?user=eliana&next=/dashboard",
+        url: `${PRELIQ_BASE}/sso-auto-login?user=eliana&next=/dashboard`,
         icon: Scale,
       },
       {
         id: "preliq_ingesta",
         label: "Ingesta de Cargas",
         hint: "Carga de archivos y casos",
-        url: "http://localhost:8090/sso-auto-login?user=eliana&next=/ingesta",
+        url: `${PRELIQ_BASE}/sso-auto-login?user=eliana&next=/ingesta`,
         icon: UploadCloud,
       },
       {
         id: "preliq_costos",
         label: "Control de Costos",
         hint: "Gastos portuarios y fletes",
-        url: "http://localhost:8090/sso-auto-login?user=eliana&next=/costos",
+        url: `${PRELIQ_BASE}/sso-auto-login?user=eliana&next=/costos`,
         icon: FileBarChart,
       },
       {
         id: "preliq_ventas",
         label: "Control de Ventas",
         hint: "Preliquidación y facturas",
-        url: "http://localhost:8090/sso-auto-login?user=eliana&next=/ventas",
+        url: `${PRELIQ_BASE}/sso-auto-login?user=eliana&next=/ventas`,
         icon: TrendingUp,
       },
       {
         id: "preliq_estados",
         label: "Estados de Expediente",
         hint: "Tracking de pipeline",
-        url: "http://localhost:8090/sso-auto-login?user=eliana&next=/estados",
+        url: `${PRELIQ_BASE}/sso-auto-login?user=eliana&next=/estados`,
         icon: CheckCheck,
       },
       {
         id: "preliq_utilidad",
         label: "Análisis de Utilidad",
         hint: "Márgenes y rentabilidad",
-        url: "http://localhost:8090/sso-auto-login?user=eliana&next=/utilidad",
+        url: `${PRELIQ_BASE}/sso-auto-login?user=eliana&next=/utilidad`,
         icon: PieChart,
       },
       {
         id: "preliq_ficha_usd",
         label: "Ficha USD",
         hint: "Cálculos en divisa y liquidación",
-        url: "http://localhost:8090/sso-auto-login?user=eliana&next=/ficha-usd",
+        url: `${PRELIQ_BASE}/sso-auto-login?user=eliana&next=/ficha-usd`,
         icon: DollarSign,
       },
       {
         id: "preliq_rubros",
         label: "Catálogo de Rubros",
         hint: "Conceptos contables y aduana",
-        url: "http://localhost:8090/sso-auto-login?user=eliana&next=/rubros",
+        url: `${PRELIQ_BASE}/sso-auto-login?user=eliana&next=/rubros`,
         icon: Building2,
       },
       {
         id: "preliq_conciliacion",
         label: "Conciliación & Efectivo",
         hint: "Auditoría de caja chica",
-        url: "http://localhost:8090/sso-auto-login?user=eliana&next=/conciliacion",
+        url: `${PRELIQ_BASE}/sso-auto-login?user=eliana&next=/conciliacion`,
         icon: CashIcon,
       },
     ],
@@ -286,39 +315,39 @@ export const REPO_MODULES: RepoModule[] = [
     id: "modulo_finanzas",
     title: "Finanzas & Bancos",
     repoName: "Modulo-Finanzas",
-    port: "Puerto 8001",
+    port: PORT_FINANZAS,
     badge: "CXP & BANCOS",
     badgeColor: "bg-blue-50 text-blue-700 border-blue-200",
     icon: Receipt,
     defaultView: "fin_cxp",
-    defaultUrl: "http://localhost:8001/sso-auto-login?user=eliana&next=/CxP",
+    defaultUrl: `${FINANZAS_BASE}/sso-auto-login?user=eliana&next=/CxP`,
     items: [
       {
         id: "fin_cxp",
         label: "Conciliación Bancaria Principal",
         hint: "Estados de cuenta y comprobantes",
-        url: "http://localhost:8001/sso-auto-login?user=eliana&next=/CxP",
+        url: `${FINANZAS_BASE}/sso-auto-login?user=eliana&next=/CxP`,
         icon: Receipt,
       },
       {
         id: "fin_dashboard",
         label: "Dashboard Financiero CxP",
         hint: "Métricas de cuentas por pagar",
-        url: "http://localhost:8001/sso-auto-login?user=eliana&next=/CxP/dashboard",
+        url: `${FINANZAS_BASE}/sso-auto-login?user=eliana&next=/CxP/dashboard`,
         icon: LayoutDashboard,
       },
       {
         id: "fin_semanal",
         label: "Flujo de Caja Semanal",
         hint: "Proyección semanal de pagos",
-        url: "http://localhost:8001/sso-auto-login?user=eliana&next=/CxP/dashboard#semanal",
+        url: `${FINANZAS_BASE}/sso-auto-login?user=eliana&next=/CxP/dashboard#semanal`,
         icon: TrendingUp,
       },
       {
         id: "fin_trading",
         label: "Trading & Devaluación BCV",
         hint: "Monitoreo cambiario oficial",
-        url: "http://localhost:8001/sso-auto-login?user=eliana&next=/CxP/trading-devaluacion",
+        url: `${FINANZAS_BASE}/sso-auto-login?user=eliana&next=/CxP/trading-devaluacion`,
         badge: "BCV",
         badgeColor: "bg-blue-600 text-white",
         icon: DollarSign,
@@ -329,18 +358,18 @@ export const REPO_MODULES: RepoModule[] = [
     id: "sistema_erp_admin",
     title: "Administración Central",
     repoName: "Sistema_ERP",
-    port: "Puerto 8000",
+    port: PORT_ADMIN,
     badge: "HOLDING",
     badgeColor: "bg-cyan-50 text-cyan-800 border-cyan-200",
     icon: LayoutDashboard,
     defaultView: "user_coordinador",
-    defaultUrl: "http://localhost:8002/sso-auto-login?user=eliana&next=/coordinacion",
+    defaultUrl: `${VEHICULAR_BASE}/sso-auto-login?user=eliana&next=/coordinacion`,
     items: [
       {
         id: "user_coordinador",
         label: "Panel Coordinador",
         hint: "Tiempos & Pipeline general",
-        url: "http://localhost:8002/sso-auto-login?user=eliana&next=/coordinacion",
+        url: `${VEHICULAR_BASE}/sso-auto-login?user=eliana&next=/coordinacion`,
         badge: "KPIS",
         badgeColor: "bg-indigo-600 text-white",
         icon: LayoutDashboard,
@@ -349,7 +378,7 @@ export const REPO_MODULES: RepoModule[] = [
         id: "user_admin",
         label: "Panel Administrador",
         hint: "Usuarios & Contraseñas SSO",
-        url: "http://localhost:8002/sso-auto-login?user=eliana&next=/administrador",
+        url: `${VEHICULAR_BASE}/sso-auto-login?user=eliana&next=/administrador`,
         badge: "SEGURIDAD",
         badgeColor: "bg-purple-600 text-white",
         icon: ShieldCheck,
@@ -358,7 +387,7 @@ export const REPO_MODULES: RepoModule[] = [
         id: "user_preliq_admin",
         label: "Admin Preliquidaciones",
         hint: "Seguridad y permisos Preliq",
-        url: "http://localhost:8090/sso-auto-login?user=eliana&next=/administrador",
+        url: `${PRELIQ_BASE}/sso-auto-login?user=eliana&next=/administrador`,
         badge: "PRELIQ",
         badgeColor: "bg-amber-600 text-white",
         icon: ShieldCheck,

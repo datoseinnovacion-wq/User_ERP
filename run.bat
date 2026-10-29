@@ -6,14 +6,14 @@ echo   LINK 1.720 Agentes Aduanales S.A.
 echo   Plataforma Centralizada de Repositorios (SSO)
 echo ========================================================
 echo Iniciando todos los repositorios en vivo:
-echo   [1] Sistema SEA 1.720 Web                  -> Puerto 43123
-echo   [2] Sistema SEA 1.720 API                  -> Puerto 43124
-echo   [3] Asignacion Vehicular                   -> Puerto 8002
-echo   [4] Preliquidaciones                       -> Puerto 8090
-echo   [5] Finanzas & Bancos (CxP)                -> Puerto 8001
-echo   [6] Gateway SSO Central                    -> Puerto 8000
-echo   [7] Portal Web Frontend                    -> Puerto 3000
-echo   [*] Modulo Resguardo                       -> EXCLUIDO
+echo   [1] Sistema SEA 1.720 Web                  : Puerto 43123
+echo   [2] Sistema SEA 1.720 API                  : Puerto 43124
+echo   [3] Asignacion Vehicular                   : Puerto 8002
+echo   [4] Preliquidaciones                       : Puerto 8090
+echo   [5] Finanzas y Bancos (CxP)                : Puerto 8001
+echo   [6] Gateway SSO Central                    : Puerto 8000
+echo   [7] Portal Web Frontend                    : Puerto 3000
+echo   [*] Modulo Resguardo                       : EXCLUIDO
 echo ========================================================
 echo.
 
