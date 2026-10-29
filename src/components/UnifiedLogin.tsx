@@ -101,6 +101,8 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         setOnboardingStep(1);
       } else if (data.status === "2FA_REQUIRED") {
         setTempToken(data.temp_token);
+        if (data.qr_code) setQrCodeDataUri(data.qr_code);
+        if (data.secret) setManualSecret(data.secret);
         setViewMode("2FA_VERIFY");
       } else {
         localStorage.setItem("link_sso_user", JSON.stringify(data.user));
@@ -425,30 +427,51 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
               </div>
             </div>
 
-            <div className="flex justify-between items-center text-xs">
-              <button
-                type="button"
-                onClick={() => {
-                  setUseBackupCode(!useBackupCode);
-                  setTotpCode("");
-                  setError("");
-                }}
-                className="text-cyan-400 hover:text-cyan-300 font-semibold underline text-[11px]"
-              >
-                {useBackupCode ? "Usar app Google Authenticator" : "Usar código de respaldo"}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setViewMode("CREDENTIALS");
-                  setTotpCode("");
-                  setError("");
-                }}
-                className="text-slate-400 hover:text-slate-200 text-[11px] flex items-center gap-1"
-              >
-                <ArrowLeft className="w-3 h-3" />
-                <span>Volver</span>
-              </button>
+            <div className="flex flex-col space-y-2 text-xs pt-1">
+              <div className="flex justify-between items-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUseBackupCode(!useBackupCode);
+                    setTotpCode("");
+                    setError("");
+                  }}
+                  className="text-cyan-400 hover:text-cyan-300 font-semibold underline text-[11px]"
+                >
+                  {useBackupCode ? "Usar app Google Authenticator" : "Usar código de respaldo"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setViewMode("CREDENTIALS");
+                    setTotpCode("");
+                    setError("");
+                  }}
+                  className="text-slate-400 hover:text-slate-200 text-[11px] flex items-center gap-1"
+                >
+                  <ArrowLeft className="w-3 h-3" />
+                  <span>Volver</span>
+                </button>
+              </div>
+
+              {qrCodeDataUri && (
+                <div className="text-center pt-2 border-t border-slate-800/80">
+                  <button
+                    type="button"
+                    onClick={() => setShowManualKey(!showManualKey)}
+                    className="text-[11px] text-slate-400 hover:text-cyan-300 transition"
+                  >
+                    {showManualKey ? "Ocultar código QR" : "¿Desea ver o re-escanear el código QR?"}
+                  </button>
+                  {showManualKey && (
+                    <div className="mt-2 p-3 bg-[#060D1A] rounded-xl border border-cyan-900/60 flex flex-col items-center space-y-2">
+                      <img src={qrCodeDataUri} alt="QR 2FA" className="w-36 h-36 rounded-lg bg-white p-1" />
+                      <p className="text-[10px] text-slate-400">Clave Base32 permanente de su cuenta:</p>
+                      <code className="text-[10px] font-mono text-cyan-300 bg-slate-900 px-2 py-0.5 rounded select-all">{manualSecret}</code>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <button

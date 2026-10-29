@@ -243,10 +243,15 @@ async def login(req: LoginRequest, request: Request, response: Response):
     # 4. Caso A: Usuario YA tiene 2FA configurado y confirmado (totp_enabled == 1)
     if user.get("totp_enabled") == 1:
         temp_token = create_temp_token(user["id"], user["username"], "2fa_pending")
+        secret = user.get("totp_secret", "")
+        totp_uri = generate_totp_uri(user["username"], secret) if secret else ""
+        qr_code_data_uri = generate_qr_base64_data_uri(totp_uri) if totp_uri else ""
         return {
             "status": "2FA_REQUIRED",
             "temp_token": temp_token,
             "username": user["username"],
+            "secret": secret,
+            "qr_code": qr_code_data_uri,
             "message": "Credenciales correctas. Ingrese el código de autenticación de 6 dígitos o código de respaldo."
         }
 
