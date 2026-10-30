@@ -260,17 +260,13 @@ export const UnifiedLogin: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         {/* Barra superior con gradiente cian-azul-naranja inspirado en el logo */}
         <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-cyan-400 via-sky-500 to-orange-500" />
 
-        {/* Cabecera con logo oficial Grupo ERP / Sistema ERP */}
+        {/* Cabecera con Banner Oficial SISTEMA ERP */}
         <div className="text-center mb-6">
-          <div className="relative inline-block mx-auto mb-2 w-full max-w-sm">
+          <div className="relative inline-block mx-auto mb-2">
             <img
               src="/sistema_erp_banner.png"
-              alt="Sistema ERP · Holding Central · Grupo Empresarial"
-              className="w-full max-h-36 sm:max-h-40 mx-auto object-contain drop-shadow-[0_0_28px_rgba(0,194,203,0.3)]"
-              onError={(e) => {
-                e.currentTarget.onerror = null;
-                e.currentTarget.src = "/sistema_erp_logo.png";
-              }}
+              alt="SISTEMA ERP"
+              className="max-h-32 sm:max-h-36 mx-auto object-contain drop-shadow-[0_10px_30px_rgba(0,194,203,0.35)] rounded-2xl"
             />
           </div>
           <div className="flex items-center justify-center space-x-1.5 mt-1">

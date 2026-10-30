@@ -1,11 +1,9 @@
-import type { ErpModuleId } from "./config/modules";
-
-export type UserRole =
-  | "ADMINISTRADOR"
-  | "GERENTE"
-  | "COORDINADOR"
-  | "OPERADOR"
-  | "ANALISTA_FINANZAS"
+export type UserRole = 
+  | "ADMINISTRADOR" 
+  | "GERENTE" 
+  | "COORDINADOR" 
+  | "OPERADOR" 
+  | "ANALISTA_FINANZAS" 
   | "LIQUIDADOR";
 
 export interface UserSession {
@@ -21,12 +19,6 @@ export interface UserSession {
   cargasSinAsignar: number;
   cargasEnProceso: number;
 }
-
-/** null = home del sistema (tarjetas de módulos) */
-export type ActiveModuleId = ErpModuleId | null;
-
-/** null = hub nativo del módulo; string = sección embebida (iframe) */
-export type ActiveSectionId = string | null;
 
 export interface CargaRecord {
   id: string;

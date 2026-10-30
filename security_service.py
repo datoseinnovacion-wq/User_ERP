@@ -11,7 +11,6 @@ import json
 import base64
 import sqlite3
 import secrets
-from dataclasses import dataclass, field
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Dict, Any
 from contextlib import contextmanager
@@ -44,18 +43,6 @@ def format_venezuela_time(dt: Optional[datetime] = None) -> str:
     else:
         dt = dt.astimezone(VET_TZ)
     return dt.strftime("%Y-%m-%d %H:%M:%S VET")
-
-@dataclass
-class NewUserSpec:
-    """Datos de alta de un perfil. Agrupa argumentos para no exceder el límite de parámetros."""
-    username: str
-    password: str
-    nombre: str
-    email: str = ""
-    rol: str = "OPERADOR"
-    cargo: str = ""
-    modulos: List[str] = field(default_factory=list)
-    permisos: Optional[List[str]] = None
 
 class SecurityDatabase:
     def __init__(self, db_path: str = DEFAULT_DB_PATH):
@@ -299,152 +286,6 @@ class SecurityDatabase:
             cursor.execute("SELECT id, username, nombre, email, rol, cargo, modulos, permisos, totp_enabled FROM users")
             rows = cursor.fetchall()
             return [dict(r) for r in rows]
-
-    def create_user(self, spec: "NewUserSpec") -> Dict[str, Any]:
-        """Alta de perfil desde Administración. 2FA queda pendiente de enrolamiento."""
-        uname = (spec.username or "").strip().lower()
-        if not uname or not spec.password or not spec.nombre:
-            raise ValueError("username, password y nombre son obligatorios")
-        if self.get_user_by_username(uname):
-            raise ValueError(f"El usuario '{uname}' ya existe")
-
-        now_str = format_venezuela_time()
-        user_id = f"usr_{uname}"
-        pw_hash = bcrypt.hashpw(spec.password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-        modulos_clean = [str(m).strip().upper() for m in (spec.modulos or []) if str(m).strip()]
-        permisos = spec.permisos
-        if permisos is None:
-            permisos = self._default_permisos_for_modules(modulos_clean, spec.rol)
-        permisos_clean = [str(p).strip() for p in permisos if str(p).strip()]
-
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                INSERT INTO users (
-                    id, username, password_hash, nombre, email, rol, cargo,
-                    modulos, permisos, totp_secret, totp_enabled, totp_backup_codes,
-                    created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, 0, NULL, ?, ?)
-                """,
-                (
-                    user_id,
-                    uname,
-                    pw_hash,
-                    spec.nombre.strip(),
-                    (spec.email or f"{uname}@link1720.com").strip(),
-                    (spec.rol or "OPERADOR").strip().upper(),
-                    (spec.cargo or "").strip() or (spec.rol or "OPERADOR"),
-                    json.dumps(modulos_clean),
-                    json.dumps(permisos_clean),
-                    now_str,
-                    now_str,
-                ),
-            )
-            conn.commit()
-
-        created = self.get_user_by_username(uname)
-        if not created:
-            raise RuntimeError("No se pudo leer el usuario recién creado")
-        return {
-            "id": created["id"],
-            "username": created["username"],
-            "nombre": created["nombre"],
-            "email": created["email"],
-            "rol": created["rol"],
-            "cargo": created["cargo"],
-            "modulos": created["modulos"],
-            "permisos": created["permisos"],
-            "totp_enabled": created["totp_enabled"],
-        }
-
-    def update_user_access(
-        self,
-        username: str,
-        modulos: Optional[List[str]] = None,
-        rol: Optional[str] = None,
-        cargo: Optional[str] = None,
-        permisos: Optional[List[str]] = None,
-        nombre: Optional[str] = None,
-        email: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        """Actualiza acceso (módulos/rol) de un perfil existente."""
-        uname = (username or "").strip().lower()
-        existing = self.get_user_by_username(uname)
-        if not existing:
-            raise ValueError(f"Usuario '{uname}' no encontrado")
-
-        now_str = format_venezuela_time()
-        new_rol = (rol or existing["rol"]).strip().upper()
-        new_cargo = cargo if cargo is not None else existing["cargo"]
-        new_nombre = nombre if nombre is not None else existing["nombre"]
-        new_email = email if email is not None else existing["email"]
-
-        if modulos is not None:
-            modulos_clean = [str(m).strip().upper() for m in modulos if str(m).strip()]
-        else:
-            try:
-                modulos_clean = json.loads(existing["modulos"]) if isinstance(existing["modulos"], str) else list(existing["modulos"])
-            except Exception:
-                modulos_clean = []
-
-        if permisos is not None:
-            permisos_clean = [str(p).strip() for p in permisos if str(p).strip()]
-        else:
-            permisos_clean = self._default_permisos_for_modules(modulos_clean, new_rol)
-
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                UPDATE users
-                SET nombre = ?, email = ?, rol = ?, cargo = ?,
-                    modulos = ?, permisos = ?, updated_at = ?
-                WHERE username = ?
-                """,
-                (
-                    new_nombre,
-                    new_email,
-                    new_rol,
-                    new_cargo,
-                    json.dumps(modulos_clean),
-                    json.dumps(permisos_clean),
-                    now_str,
-                    uname,
-                ),
-            )
-            conn.commit()
-
-        updated = self.get_user_by_username(uname)
-        if not updated:
-            raise RuntimeError("No se pudo leer el usuario actualizado")
-        return {
-            "id": updated["id"],
-            "username": updated["username"],
-            "nombre": updated["nombre"],
-            "email": updated["email"],
-            "rol": updated["rol"],
-            "cargo": updated["cargo"],
-            "modulos": updated["modulos"],
-            "permisos": updated["permisos"],
-            "totp_enabled": updated["totp_enabled"],
-        }
-
-    @staticmethod
-    def _default_permisos_for_modules(modulos: List[str], rol: str) -> List[str]:
-        rol_u = (rol or "").upper()
-        if rol_u == "ADMINISTRADOR":
-            return ["*"]
-        mapping = {
-            "DESPACHO": "despacho:total",
-            "VEHICULAR": "vehicular:total",
-            "PRELIQUIDACIONES": "preliq:total",
-            "FINANZAS": "finanzas:total",
-        }
-        perms = [mapping[m] for m in modulos if m in mapping]
-        if rol_u == "GERENTE":
-            perms.append("admin:total")
-        return perms
 
     # --- CONTROL ANTI FUERZA BRUTA ---
     def _get_attempt_key(self, username: str, ip: str) -> str:

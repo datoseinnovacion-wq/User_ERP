@@ -17,9 +17,6 @@ RUN npm ci --ignore-scripts
 COPY tsconfig.json vite.config.ts tailwind.config.js postcss.config.js index.html ./
 COPY public/ ./public/
 COPY src/ ./src/
-# El token del módulo SEA se inyecta en el build; no vive en el código fuente.
-ARG VITE_SEA_SSO_TOKEN=""
-ENV VITE_SEA_SSO_TOKEN=$VITE_SEA_SSO_TOKEN
 RUN npm run build
 
 # ------------------------------------------------------------------------------

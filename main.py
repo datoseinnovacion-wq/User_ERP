@@ -18,12 +18,11 @@ from fastapi import FastAPI, Request, Response, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 import jwt
 
 from security_service import (
     security_db,
-    NewUserSpec,
     generate_base32_secret,
     generate_8_backup_codes,
     generate_totp_uri,
@@ -127,24 +126,6 @@ class UnlockUserRequest(BaseModel):
     username: str
     ip_address: Optional[str] = None
 
-class CreateUserRequest(BaseModel):
-    username: str
-    password: str
-    nombre: str
-    email: Optional[str] = None
-    rol: str = "GERENTE"
-    cargo: Optional[str] = None
-    modulos: list = Field(default_factory=list)
-    permisos: Optional[list] = None
-
-class UpdateUserAccessRequest(BaseModel):
-    modulos: Optional[list] = None
-    rol: Optional[str] = None
-    cargo: Optional[str] = None
-    permisos: Optional[list] = None
-    nombre: Optional[str] = None
-    email: Optional[str] = None
-
 def create_sso_token(user_data: dict) -> str:
     """Emite el token definitivo de sesión SSO (7 días)."""
     modulos = user_data["modulos"]
@@ -183,36 +164,6 @@ def create_temp_token(user_id: str, username: str, stage: str) -> str:
         "exp": int(time.time()) + TEMP_TOKEN_EXPIRY
     }
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
-
-def current_session(request: Request) -> Dict[str, Any]:
-    """Lee la sesión SSO desde cookie HttpOnly o cabecera Bearer."""
-    token = request.cookies.get(COOKIE_NAME)
-    auth_header = request.headers.get("Authorization") or ""
-    if auth_header.startswith("Bearer "):
-        token = auth_header.split(" ", 1)[1].strip()
-    if not token:
-        raise HTTPException(status_code=401, detail="No autenticado en Link SSO.")
-    try:
-        return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    except Exception:
-        raise HTTPException(status_code=401, detail="Token SSO inválido o expirado.") from None
-
-def require_admin(request: Request) -> Dict[str, Any]:
-    """Exige rol de administración o permiso admin:* antes de mutar el directorio."""
-    payload = current_session(request)
-    rol = str(payload.get("rol") or "").upper()
-    permisos = payload.get("permisos") or []
-    if isinstance(permisos, str):
-        try:
-            permisos = json.loads(permisos)
-        except Exception:
-            permisos = []
-    allowed = rol == "ADMINISTRADOR" or "*" in permisos or any(
-        str(item) == "admin:total" or str(item).startswith("admin:") for item in permisos
-    )
-    if not allowed:
-        raise HTTPException(status_code=403, detail="Se requiere perfil de administración.")
-    return payload
 
 def verify_temp_token(temp_token: str, expected_stage: str) -> Dict[str, Any]:
     """Verifica la firma y validez del token temporal."""
@@ -535,7 +486,19 @@ async def check_status(request: Request, identifier: Optional[str] = None):
 @app.get("/api/auth/me")
 async def get_current_user(request: Request):
     """Retorna los datos del usuario activo a partir del token SSO."""
-    return current_session(request)
+    token = request.cookies.get(COOKIE_NAME)
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split(" ")[1]
+
+    if not token:
+        raise HTTPException(status_code=401, detail="No autenticado en Link SSO.")
+
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except Exception:
+        raise HTTPException(status_code=401, detail="Token SSO inválido o expirado.")
 
 @app.post("/api/auth/logout")
 async def logout(response: Response, request: Request):
@@ -548,12 +511,11 @@ async def logout(response: Response, request: Request):
 # ==========================================
 
 @app.post("/api/admin/unlock-user")
-async def unlock_user(req: UnlockUserRequest, request: Request):
+async def unlock_user(req: UnlockUserRequest):
     """
     Función de soporte para Administradores:
     Desbloquea inmediatamente a un usuario tras bloqueo de 24 horas.
     """
-    require_admin(request)
     affected = security_db.admin_unlock(req.username, req.ip_address)
     return {
         "success": True,
@@ -562,69 +524,14 @@ async def unlock_user(req: UnlockUserRequest, request: Request):
     }
 
 @app.get("/api/admin/audit-logs")
-async def get_audit_logs(request: Request, limit: int = 100):
+async def get_audit_logs(limit: int = 100):
     """Consulta la bitácora de auditoría en hora oficial de Venezuela (VET UTC-4)."""
-    require_admin(request)
     return security_db.get_audit_logs(limit=limit)
 
 @app.get("/api/admin/users")
-async def list_admin_users(request: Request):
+async def list_admin_users():
     """Listado de usuarios con estado de autenticador 2FA."""
-    require_admin(request)
     return security_db.list_all_users()
-
-@app.post("/api/admin/users")
-async def create_admin_user(req: CreateUserRequest, request: Request):
-    """Alta de perfil corporativo desde Administración (admin-first)."""
-    require_admin(request)
-    try:
-        created = security_db.create_user(
-            NewUserSpec(
-                username=req.username,
-                password=req.password,
-                nombre=req.nombre,
-                email=req.email or "",
-                rol=req.rol,
-                cargo=req.cargo or req.rol,
-                modulos=list(req.modulos or []),
-                permisos=list(req.permisos) if req.permisos is not None else None,
-            )
-        )
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-    security_db.add_audit_log(
-        event_type="ADMIN_USER_CREATED",
-        username=req.username.strip().lower(),
-        ip_address=get_client_ip(request),
-        details=f"Perfil creado con módulos={created.get('modulos')} rol={created.get('rol')}",
-    )
-    return {"success": True, "user": created}
-
-@app.patch("/api/admin/users/{username}")
-async def update_admin_user(username: str, req: UpdateUserAccessRequest, request: Request):
-    """Actualiza módulos / rol / datos de un perfil existente."""
-    require_admin(request)
-    try:
-        updated = security_db.update_user_access(
-            username=username,
-            modulos=list(req.modulos) if req.modulos is not None else None,
-            rol=req.rol,
-            cargo=req.cargo,
-            permisos=list(req.permisos) if req.permisos is not None else None,
-            nombre=req.nombre,
-            email=req.email,
-        )
-    except ValueError as exc:
-        raise HTTPException(status_code=404 if "no encontrado" in str(exc).lower() else 400, detail=str(exc)) from exc
-
-    security_db.add_audit_log(
-        event_type="ADMIN_USER_UPDATED",
-        username=username.strip().lower(),
-        ip_address=get_client_ip(request),
-        details=f"Acceso actualizado módulos={updated.get('modulos')} rol={updated.get('rol')}",
-    )
-    return {"success": True, "user": updated}
 
 # ==========================================
 # ENDPOINTS OPERATIVOS Y ESTÁTICOS

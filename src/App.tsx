@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { UserSession, ActiveModuleId, ActiveSectionId } from "./types";
+import { UserSession } from "./types";
 import { UnifiedLogin } from "./components/UnifiedLogin";
-import { UnifiedSidebar } from "./components/UnifiedSidebar";
+import { UnifiedSidebar, REPO_MODULES } from "./components/UnifiedSidebar";
 import { UnifiedHeader } from "./components/UnifiedHeader";
-import { ModuleWorkspace } from "./components/ModuleWorkspace";
-import { SystemHome } from "./components/SystemHome";
-import { adminFetch } from "./config/adminApi";
-import { getModuleById, ErpModuleId, userCanAccessModule } from "./config/modules";
+import { LiveRepositoryViewer } from "./components/LiveRepositoryViewer";
 import {
   X,
   ShieldCheck,
@@ -40,22 +37,23 @@ export const App: React.FC = () => {
     return null;
   });
 
-  const [activeModule, setActiveModule] = useState<ActiveModuleId>(null);
-  const [activeSection, setActiveSection] = useState<ActiveSectionId>(null);
+  const defaultModule = REPO_MODULES[0];
+  const defaultItem = defaultModule.items[0];
+
+  const [activeView, setActiveView] = useState(defaultItem.id);
+  const [activeUrl, setActiveUrl] = useState(defaultItem.url);
+  const [activeRepoName, setActiveRepoName] = useState(defaultModule.repoName);
+  const [activePort, setActivePort] = useState(defaultModule.port);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [showSecurityModal, setShowSecurityModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
 
+  // Estados de Auditoría y Soporte Administrativo
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [unlockTarget, setUnlockTarget] = useState("");
   const [unlockFeedback, setUnlockFeedback] = useState("");
-
-  const currentModule = getModuleById(activeModule) ?? null;
-  const sectionLabel =
-    currentModule && activeSection
-      ? currentModule.sections.find((s) => s.id === activeSection)?.label ?? null
-      : null;
 
   const handleLogout = async () => {
     try {
@@ -69,10 +67,11 @@ export const App: React.FC = () => {
     setCurrentUser(null);
   };
 
+  // Monitor de Inactividad: 5 Minutos Continuos (300,000 ms)
   useEffect(() => {
     if (!currentUser) return;
 
-    const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000;
+    const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000; // 300,000 ms
     let timer: ReturnType<typeof setTimeout>;
 
     const performInactivityLogout = async () => {
@@ -84,6 +83,7 @@ export const App: React.FC = () => {
       localStorage.removeItem("link_sso_user");
       localStorage.removeItem("link_sso_token");
       setCurrentUser(null);
+      // Redirigir con razón de inactividad
       window.history.replaceState(null, "", "/login?reason=inactividad");
     };
 
@@ -94,6 +94,8 @@ export const App: React.FC = () => {
 
     const events = ["mousemove", "mousedown", "keydown", "scroll", "touchstart", "click"];
     events.forEach((evt) => window.addEventListener(evt, resetTimer, { passive: true }));
+
+    // Iniciar temporizador
     resetTimer();
 
     return () => {
@@ -102,10 +104,11 @@ export const App: React.FC = () => {
     };
   }, [currentUser]);
 
+  // Cargar Bitácora de Auditoría en Hora de Venezuela
   const fetchAuditLogs = async () => {
     setLoadingLogs(true);
     try {
-      const res = await adminFetch("/api/admin/audit-logs?limit=25");
+      const res = await fetch("/api/admin/audit-logs?limit=25");
       if (res.ok) {
         const data = await res.json();
         setAuditLogs(data);
@@ -117,11 +120,12 @@ export const App: React.FC = () => {
     }
   };
 
+  // Desbloqueo Inmediato por Administración
   const handleAdminUnlock = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!unlockTarget) return;
     try {
-      const res = await adminFetch("/api/admin/unlock-user", {
+      const res = await fetch("/api/admin/unlock-user", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: unlockTarget }),
@@ -145,49 +149,38 @@ export const App: React.FC = () => {
     return <UnifiedLogin onLoginSuccess={(u) => setCurrentUser(u)} />;
   }
 
-  const handleSelectModule = (moduleId: ErpModuleId) => {
-    if (
-      currentUser &&
-      !userCanAccessModule(moduleId, {
-        rol: currentUser.rol,
-        modulos: currentUser.modulos,
-        permisos: currentUser.permisos,
-      })
-    ) {
-      return;
-    }
-    setActiveModule(moduleId);
-    const mod = getModuleById(moduleId);
-    // Abrir de una el repositorio en vivo (iframe), excepto Admin (hub nativo).
-    if (mod && mod.id !== "sistema_erp_admin" && mod.defaultSectionId) {
-      setActiveSection(mod.defaultSectionId);
-    } else {
-      setActiveSection(null);
-    }
-    setSearchQuery("");
+  const handleSelectView = (viewId: string, targetUrl: string, repoName: string, port: string) => {
+    setActiveView(viewId);
+    setActiveUrl(targetUrl);
+    setActiveRepoName(repoName);
+    setActivePort(port);
   };
 
-  const handleSelectHome = () => {
-    setActiveModule(null);
-    setActiveSection(null);
-    setSearchQuery("");
+  const getViewTitle = () => {
+    for (const mod of REPO_MODULES) {
+      const found = mod.items.find((item) => item.id === activeView);
+      if (found) {
+        return `${mod.title} • ${found.label}`;
+      }
+    }
+    return "LINK 1.720 • Plataforma Web Unificada";
   };
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#F8F9FA]">
+      {/* 1. SIDEBAR IZQUIERDO UNIFICADO */}
       <UnifiedSidebar
         user={currentUser}
-        activeModule={activeModule}
-        onSelectHome={handleSelectHome}
-        onSelectModule={handleSelectModule}
+        activeView={activeView}
+        onSelectView={handleSelectView}
         onLogout={handleLogout}
         onOpenSecurityModal={() => setShowSecurityModal(true)}
       />
 
+      {/* 2. ÁREA PRINCIPAL CON HEADER Y CANVAS */}
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         <UnifiedHeader
-          module={currentModule}
-          sectionLabel={sectionLabel}
+          title={getViewTitle()}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           onOpenAssignModal={() => setShowAssignModal(true)}
@@ -195,25 +188,18 @@ export const App: React.FC = () => {
           onExportDeliveryOrders={() => alert("Generando Órdenes de Entrega oficiales...")}
         />
 
-        <main className="p-3 sm:p-4 flex-1 flex flex-col overflow-hidden min-h-0">
-          {activeModule === null || !currentModule ? (
-            <SystemHome
-              onSelectModule={handleSelectModule}
-              user={currentUser}
-            />
-          ) : (
-            <ModuleWorkspace
-              module={currentModule}
-              activeSectionId={activeSection}
-              searchQuery={searchQuery}
-              onSelectSection={setActiveSection}
-              onOpenSecurityModal={() => setShowSecurityModal(true)}
-              ssoUsername={currentUser.username || "admin"}
-            />
-          )}
+        {/* CANVAS PRINCIPAL */}
+        <main className="p-3 sm:p-4 flex-1 flex flex-col overflow-hidden">
+          <LiveRepositoryViewer
+            url={activeUrl}
+            title={getViewTitle()}
+            repoName={activeRepoName}
+            port={activePort}
+          />
         </main>
       </div>
 
+      {/* MODAL DE SEGURIDAD, 2FA & AUDITORÍA VET */}
       {showSecurityModal && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
@@ -227,13 +213,13 @@ export const App: React.FC = () => {
               <button
                 onClick={() => setShowSecurityModal(false)}
                 className="text-slate-400 hover:text-slate-600"
-                type="button"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="p-6 space-y-4 overflow-y-auto text-xs text-slate-600 flex-1">
+              {/* Tarjetas de Estado de Seguridad */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl">
                   <p className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">
@@ -275,6 +261,7 @@ export const App: React.FC = () => {
                 </div>
               </div>
 
+              {/* Herramienta de Desbloqueo Administrativo */}
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5">
                 <h4 className="font-bold text-slate-800 mb-1.5 flex items-center space-x-1.5 text-xs">
                   <KeyRound className="w-4 h-4 text-slate-600" />
@@ -284,11 +271,7 @@ export const App: React.FC = () => {
                   Permite desbloquear una cuenta que haya superado los 3 intentos fallidos antes de las 24 horas.
                 </p>
                 <form onSubmit={handleAdminUnlock} className="flex gap-2">
-                  <label htmlFor="security-unlock-user" className="sr-only">
-                    Usuario a desbloquear
-                  </label>
                   <input
-                    id="security-unlock-user"
                     type="text"
                     value={unlockTarget}
                     onChange={(e) => setUnlockTarget(e.target.value)}
@@ -309,6 +292,7 @@ export const App: React.FC = () => {
                 )}
               </div>
 
+              {/* Bitácora de Auditoría en Hora de Venezuela (VET UTC-4) */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="font-bold text-slate-800 text-xs flex items-center space-x-1.5">
@@ -317,7 +301,6 @@ export const App: React.FC = () => {
                   </h4>
                   <button
                     onClick={fetchAuditLogs}
-                    type="button"
                     className="text-[11px] font-bold text-slate-600 hover:text-slate-900 flex items-center gap-1"
                   >
                     <RotateCcw className="w-3 h-3" />
@@ -381,7 +364,6 @@ export const App: React.FC = () => {
             <div className="px-6 py-3 border-t border-slate-100 bg-slate-50 flex justify-end">
               <button
                 onClick={() => setShowSecurityModal(false)}
-                type="button"
                 className="px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-slate-800 transition"
               >
                 Cerrar Panel
@@ -391,6 +373,7 @@ export const App: React.FC = () => {
         </div>
       )}
 
+      {/* MODAL GENERAR ASIGNACIÓN */}
       {showAssignModal && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
@@ -399,7 +382,6 @@ export const App: React.FC = () => {
               <button
                 onClick={() => setShowAssignModal(false)}
                 className="text-slate-400 hover:text-slate-600"
-                type="button"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -437,7 +419,6 @@ export const App: React.FC = () => {
             <div className="mt-5 pt-3 border-t border-slate-100 flex justify-end space-x-2">
               <button
                 onClick={() => setShowAssignModal(false)}
-                type="button"
                 className="px-3.5 py-2 border border-slate-300 text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-50 transition"
               >
                 Cancelar
@@ -447,7 +428,6 @@ export const App: React.FC = () => {
                   alert("Asignación confirmada con éxito. Actualizando tablero de despacho...");
                   setShowAssignModal(false);
                 }}
-                type="button"
                 className="px-4 py-2 bg-[#DC2626] text-white rounded-lg text-xs font-bold hover:bg-[#B91C1C] transition shadow-xs"
               >
                 Confirmar Asignación
