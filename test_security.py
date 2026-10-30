@@ -219,6 +219,26 @@ class TestLinkSecuritySuite(unittest.TestCase):
         self.assertEqual(r4.status_code, 429)
         self.assertTrue(r4.json()["detail"]["locked"])
 
+    def _admin_auth_headers(self):
+        """Obtiene un Bearer de admin tras 2FA, sin tocar el bloqueo de otras IP."""
+        ip = "10.9.9.9"
+        ip_headers = {"X-Forwarded-For": ip}
+        login_res = self.client.post("/api/auth/login", json={
+            "identifier": "admin",
+            "password": "LinkMaster1720!",
+        }, headers=ip_headers)
+        self.assertEqual(login_res.status_code, 200, login_res.text)
+        data = login_res.json()
+        self.assertEqual(data.get("status"), "2FA_REQUIRED")
+        user_db = security_service.security_db.get_user_by_username("admin")
+        code = pyotp.TOTP(user_db["totp_secret"]).now()
+        verify_res = self.client.post("/api/auth/2fa/verify", json={
+            "temp_token": data["temp_token"],
+            "code": code,
+        }, headers=ip_headers)
+        self.assertEqual(verify_res.status_code, 200, verify_res.text)
+        return {"Authorization": f"Bearer {verify_res.json()['token']}"}
+
     def test_07_admin_unlock(self):
         """Verifica la función de soporte para Administradores de desbloqueo inmediato."""
         ip = "10.0.0.77"
@@ -232,11 +252,19 @@ class TestLinkSecuritySuite(unittest.TestCase):
         status_res = self.client.get(f"/api/auth/status?identifier={username}", headers={"X-Forwarded-For": ip})
         self.assertTrue(status_res.json()["locked"])
 
-        # Desbloqueo por API Admin
-        unlock_res = self.client.post("/api/admin/unlock-user", json={
+        # Sin sesión de administración el desbloqueo queda cerrado
+        self.client.cookies.clear()
+        denied = self.client.post("/api/admin/unlock-user", json={
             "username": username,
             "ip_address": ip
         })
+        self.assertEqual(denied.status_code, 401)
+
+        # Desbloqueo por API Admin autenticada
+        unlock_res = self.client.post("/api/admin/unlock-user", json={
+            "username": username,
+            "ip_address": ip
+        }, headers=self._admin_auth_headers())
         self.assertEqual(unlock_res.status_code, 200)
         self.assertTrue(unlock_res.json()["success"])
 
@@ -246,7 +274,7 @@ class TestLinkSecuritySuite(unittest.TestCase):
 
     def test_08_audit_logs_venezuelan_time(self):
         """Verifica que todos los eventos de auditoría se registren con hora de Venezuela (VET UTC-4)."""
-        logs_res = self.client.get("/api/admin/audit-logs?limit=20")
+        logs_res = self.client.get("/api/admin/audit-logs?limit=20", headers=self._admin_auth_headers())
         self.assertEqual(logs_res.status_code, 200)
         logs = logs_res.json()
         self.assertGreater(len(logs), 0)
